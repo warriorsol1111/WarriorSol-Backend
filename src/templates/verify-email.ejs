@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - Warrior Sol</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            padding: 0;
+            margin: 0;
+        }
+
+        .email-wrapper {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #e88a49;
+            color: #fff;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .section {
+            padding: 30px 20px;
+            text-align: left;
+        }
+
+        .section h1 {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: #e88a49;
+        }
+
+        .section p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .verification-code {
+            background-color: #fff5ee;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+            letter-spacing: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+            border-radius: 8px;
+            color: #e88a49;
+            border: 2px dashed #e88a49;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #e88a49;
+            color: #fff !important;
+            text-decoration: none;
+            padding: 14px 28px;
+            margin-top: 24px;
+            font-size: 17px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #d67a39;
+        }
+
+        .footer {
+            background-color: #fff5ee;
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .social-links a {
+            color: #e88a49;
+            margin: 0 8px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .social-links a:hover {
+            color: #d67a39;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="header">
+            <h2>Welcome to Warrior Sol</h2>
+        </div>
+
+        <div class="section">
+            <h1>Verify Your Email</h1>
+            <p>
+                Hi <%= name %>,
+            </p>
+            <p>
+                Welcome to the Warrior Sol family! We're excited to have you join our community of strength and style. To complete your registration and start exploring our exclusive collection, please verify your email using the code below:
+            </p>
+            
+            <div class="verification-code">
+                <%= verificationCode %>
+            </div>
+
+            <p>
+                This code will expire in 5 minutes. Once verified, you'll have full access to our premium collection of empowering fashion pieces.
+            </p>
+            
+            <p>
+                <strong>Note:</strong> If you didn't create an account with Warrior Sol, please ignore this email.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>Stay connected</p>
+            <div class="social-links">
+                <a href="https://instagram.com/warriorsol">Instagram</a> |
+                <a href="https://twitter.com/warriorsol">Twitter</a> |
+                <a href="https://facebook.com/warriorsol">Facebook</a>
+            </div>
+            <p>© 2025 Warrior Sol. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

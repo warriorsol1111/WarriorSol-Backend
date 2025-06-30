@@ -3,8 +3,8 @@ import {
   successResponse,
   failureResponse,
 } from "../../common/utils/responses.ts";
-import db from "../../database/index.ts";
-import { launchMailsTable } from "../../database/schema.ts";
+import db from "../../common/database/index.ts";
+import { launchMailsTable } from "../../common/database/schema.ts";
 import { publishToQueue } from "../email/producers/email.producers.ts";
 import { count, eq } from "drizzle-orm";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";

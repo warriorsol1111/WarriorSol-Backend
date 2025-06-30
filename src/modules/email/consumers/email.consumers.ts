@@ -1,24 +1,14 @@
 import ejs from "ejs";
 import amqp from "amqplib";
-import { sendEmail } from "../../../providers/email.provider.js";
+import { sendEmail } from "../../../providers/email.provider.ts";
 import path from "path";
-import { fileURLToPath } from "url";
 
-// Get current directory path (ES Modules)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Path to template
 const templates = path.join(__dirname, "../../../templates/");
 
 const RABBITMQ_URL =
   process.env.MESSAGE_BROKER_URL || "amqp://guest:guest@localhost:5672";
 const QUEUE_NAME = "email_queue";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-interface EmailTemplateData {
-  subject: string;
-  frontendUrl: string;
-}
 
 export async function consumeEmails() {
   let connected = false;
@@ -32,7 +22,7 @@ export async function consumeEmails() {
 
       channel.consume(
         QUEUE_NAME,
-        async (msg) => {
+        async (msg: any) => {
           if (msg) {
             const emailData = JSON.parse(msg.content.toString());
             const { email, subject, templatePath, templateData } = emailData;
