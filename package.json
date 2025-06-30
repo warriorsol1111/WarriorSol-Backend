@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "amqplib": "^0.10.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "nodemailer": "^7.0.3",
+    "pg": "^8.16.2",
+    "rabbitmq-client": "^5.0.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "tsx --watch   src/index.ts",
+    "migrate": "drizzle-kit generate:pg --config=drizzle.config.mjs",
+    "migrate:push": "tsx src/core/database/migratePush.ts"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "devDependencies": {
+    "@types/pg": "^8.15.4",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.20.3"
+  }
+}
