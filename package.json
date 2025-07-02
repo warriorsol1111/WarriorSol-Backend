@@ -3,12 +3,14 @@
     "@types/passport-jwt": "^4.0.1",
     "amqplib": "^0.10.8",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dotenv": "^17.0.0",
     "drizzle-orm": "^0.44.2",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -30,8 +32,11 @@
     "@types/cors": "^2.8.19",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
     "drizzle-kit": "^0.31.1",
-    "tsx": "^4.20.3"
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
   }
 }

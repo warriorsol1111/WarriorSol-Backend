@@ -46,3 +46,38 @@ export const verificationCodes = pgTable("verification_codes", {
     .notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
+
+export const userStoriesTable = pgTable("user_stories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  userName: varchar("user_name", { length: 255 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  attachment: varchar("attachment", { length: 255 }),
+  userType: varchar("user_type", {
+    enum: [
+      "warrior",
+      "spouse",
+      "bloodline",
+      "caregiver",
+      "guardian",
+      "griever",
+      "supporter",
+    ],
+  })
+    .notNull()
+    .default("warrior"),
+  status: varchar("status", {
+    enum: ["pending", "approved", "rejected"],
+  })
+    .notNull()
+    .default("pending"),
+  isAnonymous: boolean("is_anonymous").default(false).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+});
