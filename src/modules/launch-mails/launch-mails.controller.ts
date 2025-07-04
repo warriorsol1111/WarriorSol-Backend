@@ -22,11 +22,9 @@ export const addUserToLaunchMails = async (req: Request, res: Response) => {
     await db.insert(launchMailsTable).values({ email });
     await publishToQueue({
       email,
-      subject: "Warrior Sol Is Officially Live!",
-      templatePath: "launch-email.ejs",
-      templateData: {
-        frontendUrl: FRONTEND_URL,
-      },
+      subject: "Welcome to the Warrior Sol Waitlist!",
+      templatePath: "waitlist-confirmation.ejs",
+      templateData: {},
     });
     successResponse(res, 200, "Email added successfully");
   } catch (error) {
