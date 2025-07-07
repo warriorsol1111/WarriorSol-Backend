@@ -18,9 +18,14 @@ export const launchMailsTable = pgTable("launch_mails", {
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"), // now nullable
   name: varchar("name", { length: 255 }).notNull(),
   cartId: varchar("cart_id", { length: 255 }),
+  authProvider: varchar("auth_provider", {
+    enum: ["credentials", "google"],
+  })
+    .notNull()
+    .default("credentials"),
   status: varchar("status", {
     enum: ["active", "suspended", "deactivated", "pending"],
   })
@@ -34,7 +39,8 @@ export const verificationCodes = pgTable("verification_codes", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+
   code: text("code").notNull(),
   type: varchar("type", {
     enum: ["email", "password_reset", "forget_password"],

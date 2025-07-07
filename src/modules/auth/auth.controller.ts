@@ -16,6 +16,7 @@ import { publishToQueue } from "../email/producers/email.producers.ts";
 class AuthController {
   async registerUser(req: Request, res: Response): Promise<void> {
     try {
+      console.log("registerUser", req.body);
       const { name, email, password } = req.body;
 
       //check if nickname is already taken
@@ -163,8 +164,19 @@ class AuthController {
         return successResponse(res, 400, "Invalid credentials");
       }
 
+      if (user.authProvider === "google") {
+        return failureResponse(
+          res,
+          403,
+          "This email is linked to a Google account. Please sign in with Google."
+        );
+      }
+
       // Traditional password-based login
-      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.passwordHash as string
+      );
 
       if (!isPasswordValid) {
         return successResponse(res, 400, "Invalid credentials");
@@ -223,6 +235,13 @@ class AuthController {
         );
       }
 
+      if (user.authProvider === "google") {
+        return failureResponse(
+          res,
+          403,
+          "This email is linked to a Google account. Please sign in with Google."
+        );
+      }
       const verificationCode = generateVerificationCode(6);
 
       await db.insert(verificationCodes).values({
@@ -256,9 +275,7 @@ class AuthController {
 
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
-      const { email, verificationCode, newPassword } = req.body;
-
-      console.log(verificationCode, newPassword);
+      const { email, newPassword } = req.body;
 
       const [user] = await db
         .select()
@@ -274,43 +291,10 @@ class AuthController {
         );
       }
 
-      const [codeEntry] = await db
-        .select()
-        .from(verificationCodes)
-        .where(
-          and(
-            eq(verificationCodes.userId, user.id),
-            eq(verificationCodes.code, verificationCode)
-          )
-        )
-        .limit(1);
-
-      console.log(codeEntry);
-
-      const isExpired = codeEntry && new Date(codeEntry.expiresAt) < new Date();
-
-      console.log("isExpired", isExpired);
-
-      if (
-        !codeEntry ||
-        codeEntry.code !== verificationCode ||
-        codeEntry.type !== "forget_password" ||
-        codeEntry.isUsed ||
-        isExpired
-      ) {
-        return successResponse(
-          res,
-          400,
-          "Invalid or expired verification code"
-        );
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      // Check if the new password is the same as the current password
+      // Check if the new password is the same as the current one
       const isSamePassword = await bcrypt.compare(
         newPassword,
-        user.passwordHash
+        user.passwordHash as string
       );
 
       if (isSamePassword) {
@@ -321,29 +305,23 @@ class AuthController {
         );
       }
 
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
       await db
         .update(usersTable)
         .set({ passwordHash: hashedPassword })
         .where(eq(usersTable.id, user.id));
 
-      await db
-        .update(verificationCodes)
-        .set({
-          isUsed: true,
-          updatedAt: new Date(),
-        })
-        .where(eq(verificationCodes.id, codeEntry.id));
-
       return successResponse(res, 200, "Password updated successfully");
     } catch (error: any) {
-      console.error(`Set password failed: ${error.message}`);
+      console.error(`Reset password failed: ${error.message}`);
       return failureResponse(res, 500, "Internal Server Error");
     }
   }
 
   async verifyEmail(req: Request, res: Response): Promise<void> {
     try {
-      const { email, verificationCode } = req.body;
+      const { email, verificationCode, type = "email" } = req.body;
       if (!email) {
         return failureResponse(res, 400, "Email is required");
       }
@@ -372,7 +350,7 @@ class AuthController {
           and(
             eq(verificationCodes.userId, user.id),
             eq(verificationCodes.code, verificationCode),
-            eq(verificationCodes.type, "email")
+            eq(verificationCodes.type, type)
           )
         )
         .orderBy(desc(verificationCodes.createdAt))
@@ -386,20 +364,71 @@ class AuthController {
         return failureResponse(res, 400, "Verification code has expired");
       }
 
-      await db
-        .update(usersTable)
-        .set({ status: "active" })
-        .where(eq(usersTable.id, user.id));
+      if (type === "email") {
+        await db
+          .update(usersTable)
+          .set({ status: "active" })
+          .where(eq(usersTable.id, user.id));
+      }
 
       await db
         .update(verificationCodes)
         .set({ isUsed: true })
         .where(eq(verificationCodes.id, codeEntry.id));
 
-      return successResponse(res, 200, "Email verified successfully");
+      return successResponse(
+        res,
+        200,
+        type === "email"
+          ? "Email verified successfully"
+          : "Verification code validated successfully"
+      );
     } catch (error: any) {
       console.error(`Email verification failed: ${error.message}`);
       return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
+  async googleSyncUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, name } = req.body;
+
+      if (!email || !name) {
+        return failureResponse(res, 400, "Email and name are required.");
+      }
+
+      const [existingUser] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, email))
+        .limit(1);
+
+      if (existingUser) {
+        return successResponse(res, 200, "User already exists.", existingUser);
+      }
+
+      const [firstName, ...rest] = name.trim().split(" ");
+      const finalName = `${firstName} ${rest.join(" ")}`.trim();
+
+      const [newUser] = await db
+        .insert(usersTable)
+        .values({
+          email,
+          name: finalName,
+          passwordHash: null,
+          authProvider: "google",
+          status: "active",
+        })
+        .returning();
+
+      return successResponse(
+        res,
+        201,
+        "Google user created successfully.",
+        newUser
+      );
+    } catch (err: any) {
+      console.error("Google sync error:", err.message);
+      return failureResponse(res, 500, "Internal server error.");
     }
   }
 }
