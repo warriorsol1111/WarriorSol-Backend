@@ -388,6 +388,7 @@ class AuthController {
       return failureResponse(res, 500, "Internal Server Error");
     }
   }
+
   async googleSyncUser(req: Request, res: Response): Promise<void> {
     try {
       const { email, name } = req.body;
@@ -402,30 +403,36 @@ class AuthController {
         .where(eq(usersTable.email, email))
         .limit(1);
 
-      if (existingUser) {
-        return successResponse(res, 200, "User already exists.", existingUser);
-      }
-
       const [firstName, ...rest] = name.trim().split(" ");
       const finalName = `${firstName} ${rest.join(" ")}`.trim();
 
-      const [newUser] = await db
-        .insert(usersTable)
-        .values({
-          email,
-          name: finalName,
-          passwordHash: null,
-          authProvider: "google",
-          status: "active",
-        })
-        .returning();
+      const user = existingUser
+        ? existingUser
+        : (
+            await db
+              .insert(usersTable)
+              .values({
+                email,
+                name: finalName,
+                passwordHash: null,
+                authProvider: "google",
+                status: "active",
+              })
+              .returning()
+          )[0];
 
-      return successResponse(
-        res,
-        201,
-        "Google user created successfully.",
-        newUser
+      const token = jwt.sign(
+        { id: user.id, email: user.email, name: user.name },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1d" }
       );
+
+      return successResponse(res, 200, "Google user synced successfully.", {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        token,
+      });
     } catch (err: any) {
       console.error("Google sync error:", err.message);
       return failureResponse(res, 500, "Internal server error.");

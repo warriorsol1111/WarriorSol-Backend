@@ -24,7 +24,24 @@ export async function consumeEmails() {
         QUEUE_NAME,
         async (msg: any) => {
           if (msg) {
-            const emailData = JSON.parse(msg.content.toString());
+            let emailData;
+            try {
+              const content = msg.content.toString();
+              if (!content) {
+                console.error("Received empty message content.");
+                channel.ack(msg); // or channel.nack(msg, false, false) to discard
+                return;
+              }
+              emailData = JSON.parse(content);
+            } catch (parseError) {
+              console.error(
+                "Failed to parse message content as JSON:",
+                parseError
+              );
+              channel.ack(msg); // or channel.nack(msg, false, false) to discard
+              return;
+            }
+
             const { email, subject, templatePath, templateData } = emailData;
 
             console.log("Received message:", emailData);
