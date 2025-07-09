@@ -14,9 +14,7 @@ import { publishToQueue } from "../email/producers/email.producers.ts";
 class CartController {
   async getCartID(req: Request, res: Response) {
     try {
-      console.log("Request user object:", req.user);
       const userID = req.user?.id;
-      console.log("User ID from request:", userID);
       if (!userID) {
         return failureResponse(res, 401, "Unauthorized");
       }

@@ -9,6 +9,7 @@ import userStoriesRouter from "./modules/user-stories/user-stories.routes.js";
 import passport from "./common/strategies/jwt-strategy.js";
 import { scheduleLaunchEmails } from "./modules/launch-mails/launch-mail.cron.js";
 import cartRouter from "./modules/cart/cart.routes.js";
+import wishlistRouter from "./modules/wishlist/wishlist.routes.js";
 
 async function main() {
   const app = express();
@@ -25,6 +26,7 @@ async function main() {
   app.use("/api/v1/auth/", authRouter);
   app.use("/api/v1/user-stories/", userStoriesRouter);
   app.use("/api/v1/cart", cartRouter);
+  app.use("/api/v1/wishlist", wishlistRouter);
 
   // Initialize the launch email cron job
   scheduleLaunchEmails();

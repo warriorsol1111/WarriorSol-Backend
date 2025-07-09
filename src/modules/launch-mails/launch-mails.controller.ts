@@ -44,7 +44,6 @@ export const getCountOfLaunchMails = async (req: Request, res: Response) => {
       launchMailsCount[0].count
     );
   } catch (error) {
-    console.log(error);
     failureResponse(res, 500, "Failed to get count of launch mails");
   }
 };

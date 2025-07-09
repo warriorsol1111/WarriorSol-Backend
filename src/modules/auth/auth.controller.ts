@@ -16,7 +16,6 @@ import { publishToQueue } from "../email/producers/email.producers.ts";
 class AuthController {
   async registerUser(req: Request, res: Response): Promise<void> {
     try {
-      console.log("registerUser", req.body);
       const { name, email, password } = req.body;
 
       //check if nickname is already taken

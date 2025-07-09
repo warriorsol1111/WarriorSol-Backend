@@ -87,3 +87,14 @@ export const userStoriesTable = pgTable("user_stories", {
     .notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
+
+export const wishlistTable = pgTable("wishlist", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  variantId: varchar("variant_id", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
