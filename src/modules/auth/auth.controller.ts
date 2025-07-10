@@ -204,6 +204,7 @@ class AuthController {
         name: user.name,
         email: user.email,
         status: user.status,
+        role: user.role,
         token,
       });
     } catch (error: any) {

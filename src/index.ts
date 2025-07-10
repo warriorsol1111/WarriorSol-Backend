@@ -19,9 +19,11 @@ async function main() {
     origin: "*",
   };
   app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
   app.use(cors(corsOptions));
   app.use(passport.initialize());
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
   app.use("/api/v1/launch-mails/", launchMailsRouter);
   app.use("/api/v1/auth/", authRouter);
   app.use("/api/v1/user-stories/", userStoriesRouter);

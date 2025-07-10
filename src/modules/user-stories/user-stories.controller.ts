@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import db from "../../common/database/index.js";
-import { userStoriesTable } from "../../common/database/schema.js";
+import { userStoriesTable, usersTable } from "../../common/database/schema.js";
 import {
   successResponse,
   failureResponse,
 } from "../../common/utils/responses.js";
 import { uploadFile } from "../../common/utils/cloudinary.js";
+import { desc } from "drizzle-orm";
+import { publishToQueue } from "../email/producers/email.producers.js";
 
 declare module "express" {
   interface Request {
@@ -23,7 +25,11 @@ class UserStoriesController {
       if (!userID) {
         return failureResponse(res, 401, "Unauthorized");
       }
-      const userStories = await db.select().from(userStoriesTable);
+      const userStories = await db
+        .select()
+        .from(userStoriesTable)
+        .where(eq(userStoriesTable.status, "pending"))
+        .orderBy(desc(userStoriesTable.createdAt));
 
       return successResponse(
         res,
@@ -37,11 +43,16 @@ class UserStoriesController {
   }
 
   async getApprovedUserStories(req: Request, res: Response) {
+    const userID = req.user?.id;
+    if (!userID) {
+      return failureResponse(res, 401, "Unauthorized");
+    }
     try {
       const userStories = await db
         .select()
         .from(userStoriesTable)
-        .where(eq(userStoriesTable.status, "approved"));
+        .where(eq(userStoriesTable.status, "approved"))
+        .orderBy(desc(userStoriesTable.createdAt));
       return successResponse(
         res,
         200,
@@ -146,6 +157,22 @@ class UserStoriesController {
         })
         .where(eq(userStoriesTable.id, id))
         .returning();
+      // Fetch user email
+      const [user] = await db
+        .select({ email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.id, userStory.userId));
+      if (user && user.email) {
+        await publishToQueue({
+          email: user.email,
+          subject: "Your Story Has Been Approved!",
+          templatePath: "user-story-approved.ejs",
+          templateData: {
+            userName: userStory.userName,
+            title: userStory.title,
+          },
+        });
+      }
       return successResponse(
         res,
         200,
@@ -180,6 +207,22 @@ class UserStoriesController {
         })
         .where(eq(userStoriesTable.id, id))
         .returning();
+      // Fetch user email
+      const [user] = await db
+        .select({ email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.id, userStory.userId));
+      if (user && user.email) {
+        await publishToQueue({
+          email: user.email,
+          subject: "Your Story Submission Update",
+          templatePath: "user-story-rejected.ejs",
+          templateData: {
+            userName: userStory.userName,
+            title: userStory.title,
+          },
+        });
+      }
       return successResponse(
         res,
         200,

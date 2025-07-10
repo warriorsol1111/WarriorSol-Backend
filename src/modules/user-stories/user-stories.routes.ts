@@ -4,7 +4,10 @@ import authenticateJwt from "../../common/middlewares/auth.middleware.js";
 import multer from "multer";
 
 const userStoriesRouter = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  limits: { fileSize: 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+});
 userStoriesRouter.get(
   "/",
   authenticateJwt,

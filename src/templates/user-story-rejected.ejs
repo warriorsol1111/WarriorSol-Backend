@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Your Story Submission - Warrior Sol</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #ffffff;
+        color: #333;
+        padding: 0;
+        margin: 0;
+      }
+
+      .email-wrapper {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+      }
+
+      .header {
+        background-color: #e88a49;
+        color: #fff;
+        text-align: center;
+        padding: 40px 20px;
+      }
+
+      .section {
+        padding: 30px 20px;
+        text-align: left;
+      }
+
+      .section h1 {
+        font-size: 28px;
+        margin-bottom: 12px;
+        color: #e88a49;
+      }
+
+      .section p {
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .cta-button {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 12px 24px;
+        background-color: #e88a49;
+        color: #fff !important;
+
+        color: #fff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+      }
+
+      .cta-button:hover {
+        background-color: #d67a39;
+      }
+
+      .footer {
+        background-color: #fff5ee;
+        text-align: center;
+        padding: 20px;
+        font-size: 12px;
+        color: #777;
+      }
+
+      .social-links a {
+        color: #e88a49;
+        margin: 0 8px;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .social-links a:hover {
+        color: #d67a39;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="header">
+        <h2>Hello, <%= userName %></h2>
+      </div>
+
+      <div class="section">
+        <h1>Your Story Submission Update</h1>
+        <p>
+          We appreciate you taking the time to share your story,
+          <strong>"<%= title %>"</strong>, with Warrior Sol.
+        </p>
+        <p>
+          After careful review, we regret to inform you that your story was not approved for publication at this time.
+        </p>
+
+        <% if (typeof message !== 'undefined' && message) { %>
+        <p><%= message %></p>
+        <% } %>
+
+        <p>
+          Please don't be discouraged—your voice is important to us, and we encourage you to continue sharing your journey.
+        </p>
+        <p>
+          If you'd like, you can try uploading your story again. We look forward to hearing from you!
+        </p>
+
+        <a
+          class="cta-button"
+          href="<%= frontendUrl %>/community"
+          target="_blank"
+        >
+          Try Again or Visit the Warrior Sol Community →
+        </a>
+      </div>
+
+      <div class="footer">
+        <p>Stay connected</p>
+        <div class="social-links">
+          <a href="https://instagram.com/warriorsol">Instagram</a> |
+          <a href="https://twitter.com/warriorsol">Twitter</a> |
+          <a href="https://facebook.com/warriorsol">Facebook</a>
+        </div>
+        <p>&copy; 2025 Warrior Sol. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
