@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= subject || 'Warrior Sol Newsletter' %></title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #ffffff;
+        color: #333;
+        padding: 0;
+        margin: 0;
+      }
+
+      .email-wrapper {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+      }
+
+      .header {
+        background-color: #e88a49;
+        color: #fff;
+        text-align: center;
+        padding: 40px 20px;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .header h2 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: 1px;
+        font-weight: 600;
+      }
+
+      .section {
+        background-color: #fffdfb;
+        padding: 30px 20px;
+        text-align: left;
+        border: 1px solid #f0e6df;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+      }
+
+      .section h1 {
+        font-size: 26px;
+        margin-bottom: 16px;
+        color: #e88a49;
+        font-weight: 700;
+      }
+
+      .section p {
+        font-size: 16px;
+        line-height: 1.7;
+        margin-bottom: 18px;
+      }
+
+      .section p strong {
+        color: #000;
+      }
+
+      .highlight {
+        font-weight: bold;
+        color: #000;
+        background-color: #fff2e6;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .section img {
+        max-width: 100%;
+        border-radius: 10px;
+        margin: 25px 0;
+        border: 1px solid #eee;
+      }
+
+      .cta-button {
+        display: inline-block;
+        background-color: #e88a49;
+        color: #fff !important;
+        text-decoration: none;
+        padding: 14px 28px;
+        margin-top: 32px;
+        font-size: 17px;
+        border-radius: 8px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        transition: background-color 0.3s ease;
+      }
+
+      .cta-button:hover {
+        background-color: #d97c3b;
+      }
+
+      .footer {
+        background-color: #fff5ee;
+        text-align: center;
+        padding: 20px;
+        font-size: 12px;
+        color: #777;
+        margin-top: 30px;
+        border-top: 1px solid #f0e6df;
+      }
+
+      .footer p:first-child {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .social-links a {
+        color: #e88a49;
+        margin: 0 8px;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .social-links a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="email-wrapper">
+      <div class="header">
+        <h2><%= heading || "This Month at Warrior Sol" %></h2>
+      </div>
+
+      <div class="section">
+        <% if (intro) { %>
+          <p><strong class="highlight">Intro:</strong> <%= intro %></p>
+        <% } %>
+
+        <% if (content) { %>
+          <p><strong class="highlight">Inside this issue:</strong><br /><%= content %></p>
+        <% } %>
+
+        <% if (cta && cta.text && cta.link) { %>
+          <div style="text-align: center;">
+            <a class="cta-button" href="<%= cta.link %>"><%= cta.text %></a>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="footer">
+        <p>Follow us for more updates</p>
+        <div class="social-links">
+          <a href="https://instagram.com/warriorsol">Instagram</a> |
+          <a href="https://twitter.com/warriorsol">Twitter</a> |
+          <a href="https://facebook.com/warriorsol">Facebook</a>
+        </div>
+        <p>© 2025 Warrior Sol. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

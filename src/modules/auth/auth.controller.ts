@@ -406,36 +406,163 @@ class AuthController {
       const [firstName, ...rest] = name.trim().split(" ");
       const finalName = `${firstName} ${rest.join(" ")}`.trim();
 
-      const user = existingUser
-        ? existingUser
-        : (
-            await db
-              .insert(usersTable)
-              .values({
-                email,
-                name: finalName,
-                passwordHash: null,
-                authProvider: "google",
-                status: "active",
-              })
-              .returning()
-          )[0];
+      // ❌ If user exists & has password, block Google login
+      if (existingUser) {
+        const hasPassword = !!existingUser.passwordHash;
+
+        if (hasPassword) {
+          return failureResponse(
+            res,
+            403,
+            "This email is already registered with a password. Please use email/password to sign in."
+          );
+        }
+
+        // ✅ Optionally update name if it changed
+        if (existingUser.name !== finalName) {
+          await db
+            .update(usersTable)
+            .set({ name: finalName })
+            .where(eq(usersTable.id, existingUser.id));
+        }
+
+        const token = jwt.sign(
+          {
+            id: existingUser.id,
+            email: existingUser.email,
+            name: existingUser.name,
+          },
+          process.env.JWT_SECRET!,
+          { expiresIn: "1d" }
+        );
+
+        return successResponse(res, 200, "Google login allowed", {
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          token,
+          role: existingUser.role || "user",
+        });
+      }
+
+      // 👶 Create new Google-based user
+      const [newUser] = await db
+        .insert(usersTable)
+        .values({
+          id: crypto.randomUUID(),
+          email,
+          name: finalName,
+          passwordHash: null,
+          authProvider: "google",
+          status: "active",
+        })
+        .returning();
 
       const token = jwt.sign(
-        { id: user.id, email: user.email, name: user.name },
+        { id: newUser.id, email: newUser.email, name: newUser.name },
         process.env.JWT_SECRET!,
         { expiresIn: "1d" }
       );
 
-      return successResponse(res, 200, "Google user synced successfully.", {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+      return successResponse(res, 200, "Google user created", {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
         token,
+        role: newUser.role || "user",
       });
     } catch (err: any) {
       console.error("Google sync error:", err.message);
       return failureResponse(res, 500, "Internal server error.");
+    }
+  }
+
+  async verifyPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+
+      const { password } = req.body;
+
+      if (!userId || !password) {
+        return failureResponse(res, 400, "User ID and password are required.");
+      }
+
+      const [user] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .limit(1);
+
+      if (!user) {
+        return failureResponse(res, 404, "User not found.");
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.passwordHash as string
+      );
+
+      if (!isPasswordValid) {
+        return failureResponse(res, 400, "Invalid password.");
+      }
+
+      return successResponse(res, 200, "Password verified successfully.");
+    } catch (error: any) {
+      console.error(`Password verification failed: ${error.message}`);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
+
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { newPassword } = req.body;
+
+      if (!userId || !newPassword) {
+        return failureResponse(
+          res,
+          400,
+          "User ID and new password are required."
+        );
+      }
+
+      const [user] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .limit(1);
+
+      if (!user) {
+        return failureResponse(res, 404, "User not found.");
+      }
+
+      const isSamePassword = await bcrypt.compare(
+        newPassword,
+        user.passwordHash as string
+      );
+
+      if (isSamePassword) {
+        return failureResponse(
+          res,
+          400,
+          "You cannot use current password as a new one."
+        );
+      }
+
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      await db
+        .update(usersTable)
+        .set({
+          passwordHash: hashedNewPassword,
+          updatedAt: new Date(),
+        })
+        .where(eq(usersTable.id, user.id));
+
+      return successResponse(res, 200, "Password changed successfully.");
+    } catch (error: any) {
+      console.error(`Change password failed: ${error.message}`);
+      return failureResponse(res, 500, "Internal Server Error");
     }
   }
 }

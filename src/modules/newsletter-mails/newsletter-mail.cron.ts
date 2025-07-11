@@ -1,0 +1,57 @@
+import cron from "node-cron";
+import db from "../../common/database/index.ts";
+import { launchMailsTable } from "../../common/database/schema.ts";
+import { publishToQueue } from "../email/producers/email.producers.ts";
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+export const scheduleNewsletterEmails = () => {
+  // Schedule for the launch emails
+  const monthlySchedule = "11 11 1 * *"; // 11:11 AM on the 1st of every month
+
+  console.log(
+    "Monthly newsletter cron job scheduled for 11:11 on the 1st of every month (America/New_York)"
+  );
+
+  cron.schedule(
+    monthlySchedule,
+    async () => {
+      try {
+        const subscribers = await db.select().from(launchMailsTable);
+
+        if (subscribers.length === 0) {
+          console.log("No subscribers found. Skipping...");
+          return;
+        }
+
+        console.log(`Sending newsletter to ${subscribers.length} subscribers`);
+
+        for (const subscriber of subscribers) {
+          await publishToQueue({
+            email: subscriber.email,
+            subject: "🔥 July Newsletter – Warrior Sol Is Here!",
+            templatePath: "newsletter-mail.ejs",
+            templateData: {
+              heading: "You've unlocked the July Transmission ",
+              intro:
+                "This month we drop heat, share behind-the-scenes moments, and celebrate YOU — the real warrior.",
+              content:
+                "Introducing our latest drop: *Solar Surge*. Bold designs, ethically made, unapologetically strong. You’ll want to grab these before they vanish.",
+              cta: {
+                text: "Shop the Drop",
+                link: `${FRONTEND_URL}/products`,
+              },
+            },
+          });
+        }
+
+        console.log("Monthly newsletters sent successfully");
+      } catch (error) {
+        console.error("Error sending monthly newsletter:", error);
+      }
+    },
+    {
+      timezone: "America/New_York",
+    }
+  );
+};

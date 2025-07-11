@@ -102,3 +102,10 @@ export const wishlistTable = pgTable("wishlist", {
     .defaultNow()
     .notNull(),
 });
+
+export const newsletterMailsTable = pgTable("newsletter_mails", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  email: varchar({ length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

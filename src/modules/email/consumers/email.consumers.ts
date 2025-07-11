@@ -51,6 +51,7 @@ export async function consumeEmails() {
 
               template = await ejs.renderFile(templates + templatePath, {
                 frontendUrl: FRONTEND_URL,
+                subject,
                 ...templateData,
               });
 
