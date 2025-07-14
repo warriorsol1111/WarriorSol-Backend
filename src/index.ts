@@ -12,6 +12,8 @@ import cartRouter from "./modules/cart/cart.routes.js";
 import wishlistRouter from "./modules/wishlist/wishlist.routes.js";
 import newsletterMailsRouter from "./modules/newsletter-mails/newsletter-mails.routes.js";
 import { scheduleNewsletterEmails } from "./modules/newsletter-mails/newsletter-mail.cron.js";
+import contactController from "./modules/contact/contact.controller.js";
+import contactRouter from "./modules/contact/contact.routes.js";
 
 async function main() {
   const app = express();
@@ -32,7 +34,7 @@ async function main() {
   app.use("/api/v1/user-stories/", userStoriesRouter);
   app.use("/api/v1/cart", cartRouter);
   app.use("/api/v1/wishlist", wishlistRouter);
-
+  app.use("/api/v1/contact", contactRouter);
   // Initialize the launch email cron job
   scheduleLaunchEmails();
   // Initilaize the newsletter email cron job

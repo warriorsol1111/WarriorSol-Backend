@@ -171,7 +171,6 @@ class AuthController {
         );
       }
 
-      // Traditional password-based login
       const isPasswordValid = await bcrypt.compare(
         password,
         user.passwordHash as string
@@ -180,6 +179,7 @@ class AuthController {
       if (!isPasswordValid) {
         return successResponse(res, 400, "Invalid credentials");
       }
+
       if (user.status !== "active") {
         return successResponse(
           res,
@@ -206,6 +206,7 @@ class AuthController {
         status: user.status,
         role: user.role,
         token,
+        loginMethod: "credentials", // 🧠 add this
       });
     } catch (error: any) {
       console.error(`Login failed: ${error.message}`);
