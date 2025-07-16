@@ -206,7 +206,7 @@ class AuthController {
         status: user.status,
         role: user.role,
         token,
-        loginMethod: "credentials", // 🧠 add this
+        loginMethod: "credentials",
       });
     } catch (error: any) {
       console.error(`Login failed: ${error.message}`);

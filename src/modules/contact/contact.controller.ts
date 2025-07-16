@@ -7,10 +7,7 @@ class ContactController {
     try {
       const { fullName, email, message } = req.body;
       const userId = req.user?.id;
-      console.log("User ID:", userId);
-      console.log("Full Name:", fullName);
-      console.log("Email:", email);
-      console.log("Message:", message);
+
       if (!userId) {
         return failureResponse(res, 401, "Unauthorized");
       }
