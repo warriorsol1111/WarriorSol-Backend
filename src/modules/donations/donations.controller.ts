@@ -25,6 +25,8 @@ class DonationController {
         return failureResponse(res, 400, "Missing required fields");
       }
 
+      const normalizedUserId = userId === "anonymous" ? null : userId;
+
       await db.insert(donationsTable).values({
         stripeSessionId,
         stripeReceiptUrl,
@@ -35,7 +37,7 @@ class DonationController {
         currency,
         donationType,
         status,
-        userId,
+        userId: normalizedUserId,
       });
 
       return successResponse(res, 201, "Donation recorded successfully");
