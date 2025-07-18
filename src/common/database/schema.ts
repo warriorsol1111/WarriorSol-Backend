@@ -109,3 +109,37 @@ export const newsletterMailsTable = pgTable("newsletter_mails", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const donationsTable = pgTable("donations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  userId: uuid("user_id").references(() => usersTable.id, {
+    onDelete: "set null",
+  }),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
+  stripeReceiptUrl: varchar("stripe_receipt_url", { length: 1024 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", {
+    length: 255,
+  }),
+
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+
+  amount: integer("amount").notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default("usd"),
+
+  donationType: varchar("donation_type", {
+    enum: ["one-time", "monthly"],
+  }).notNull(),
+
+  status: varchar("status", {
+    enum: ["succeeded", "pending", "failed", "paid"],
+  })
+    .notNull()
+    .default("succeeded"),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+});

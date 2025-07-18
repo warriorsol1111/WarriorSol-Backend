@@ -14,6 +14,7 @@ import newsletterMailsRouter from "./modules/newsletter-mails/newsletter-mails.r
 import { scheduleNewsletterEmails } from "./modules/newsletter-mails/newsletter-mail.cron.js";
 import contactController from "./modules/contact/contact.controller.js";
 import contactRouter from "./modules/contact/contact.routes.js";
+import donationsRouter from "./modules/donations/donations.route.js";
 
 async function main() {
   const app = express();
@@ -35,6 +36,7 @@ async function main() {
   app.use("/api/v1/cart", cartRouter);
   app.use("/api/v1/wishlist", wishlistRouter);
   app.use("/api/v1/contact", contactRouter);
+  app.use("/api/v1/donations", donationsRouter);
   // Initialize the launch email cron job
   scheduleLaunchEmails();
   // Initilaize the newsletter email cron job
