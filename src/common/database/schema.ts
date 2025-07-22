@@ -6,6 +6,7 @@ import {
   varchar,
   text,
   boolean,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 export const launchMailsTable = pgTable("launch_mails", {
@@ -18,7 +19,7 @@ export const launchMailsTable = pgTable("launch_mails", {
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash"), // now nullable
+  passwordHash: text("password_hash"),
   name: varchar("name", { length: 255 }).notNull(),
   cartId: varchar("cart_id", { length: 255 }),
   authProvider: varchar("auth_provider", {
@@ -142,4 +143,24 @@ export const donationsTable = pgTable("donations", {
     .defaultNow()
     .notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }),
+});
+
+export const supportApplicationsTable = pgTable("support_applications", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  familyName: varchar("family_name", { length: 256 }).notNull(),
+  contactEmail: varchar("contact_email", { length: 256 }).notNull(),
+  contactPhone: varchar("contact_phone", { length: 20 }),
+  familySize: integer("family_size").notNull(),
+  supportType: text("support_type").notNull(), // donation | gift_card | scholarship
+  requestedAmount: numeric("requested_amount", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
+  situation: text("situation").notNull(),
+  status: text("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
