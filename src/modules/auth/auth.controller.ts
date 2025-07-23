@@ -569,29 +569,41 @@ class AuthController {
   async validateToken(req: Request, res: Response): Promise<void> {
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) {
-        return failureResponse(res, 401, "Missing or invalid token");
+
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return failureResponse(
+          res,
+          500,
+          "Authorization header is missing or invalid"
+        );
       }
-      console.log("Token validation initiated", authHeader);
 
-      const rawToken = req.headers.authorization?.split(" ")[1];
-      const token = rawToken?.replace(/[^\w-_.]+/g, ""); // Removes non-JWT-safe chars
+      const token = authHeader.split(" ")[1];
 
-      console.log("Token for verification:", token);
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error("JWT_SECRET is not defined in environment variables");
+      }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, jwtSecret);
+      } catch (err) {
+        return failureResponse(res, 401, "Invalid or expired token");
+      }
 
-      console.log("Token validation started for token:", token);
-      console.log("Decoded token:", decoded);
-      const [user] = await db
+      const userId = decoded.id;
+      const result = await db
         .select()
         .from(usersTable)
-        .where(eq(usersTable.id, decoded.id))
-        .limit(1);
+        .where(eq(usersTable.id, userId));
+      const user = result[0];
 
       if (!user) {
         return failureResponse(res, 404, "User not found");
       }
+
+      const fullName = usersTable.name;
 
       return successResponse(res, 200, "Token is valid", {
         id: user.id,
@@ -600,10 +612,11 @@ class AuthController {
         role: user.role,
         status: user.status,
         token,
+        fullName: fullName,
       });
-    } catch (error: any) {
-      console.error(`Token validation failed: ${error.message}`);
-      return failureResponse(res, 401, "Invalid or expired token");
+    } catch (error) {
+      console.error("❌ Error validating token:", error);
+      return failureResponse(res, 500, "Internal Server Error");
     }
   }
 }
