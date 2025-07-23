@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
-import cors, { CorsOptions } from "cors";
+import cors from "cors";
 import express from "express";
 import launchMailsRouter from "./modules/launch-mails/launch-mails.routes.js";
 import authRouter from "./modules/auth/auth.routes.js";
@@ -19,24 +19,9 @@ import applyForSupportRouter from "./modules/apply-for-support/apply-for-support
 async function main() {
   const app = express();
   const port = process.env.PORT || 8000;
-  const allowedOrigins = [
-    "https://warriorsol-warriorsol-main.vercel.app",
-    "https://warriorsol-warriorsol-foundation.vercel.app",
-    "https://warriorsol.com",
-    "https://warriorsol.org",
-  ];
-
-  const corsOptions: CorsOptions = {
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("❌ CORS error: Not allowed by CORS"));
-      }
-    },
+  const corsOptions = {
     credentials: true,
+    origin: "*",
   };
   app.use(express.json());
   app.use(cors(corsOptions));

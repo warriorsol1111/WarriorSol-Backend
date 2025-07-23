@@ -22,6 +22,4 @@ authRouter.post(
   authController.changePassword
 );
 
-authRouter.post("/validate-token", authController.validateToken);
-
 export default authRouter;

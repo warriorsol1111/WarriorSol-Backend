@@ -566,59 +566,6 @@ class AuthController {
       return failureResponse(res, 500, "Internal Server Error");
     }
   }
-  async validateToken(req: Request, res: Response): Promise<void> {
-    try {
-      const authHeader = req.headers.authorization;
-
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return failureResponse(
-          res,
-          500,
-          "Authorization header is missing or invalid"
-        );
-      }
-
-      const token = authHeader.split(" ")[1];
-
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        throw new Error("JWT_SECRET is not defined in environment variables");
-      }
-
-      let decoded: any;
-      try {
-        decoded = jwt.verify(token, jwtSecret);
-      } catch (err) {
-        return failureResponse(res, 401, "Invalid or expired token");
-      }
-
-      const userId = decoded.id;
-      const result = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.id, userId));
-      const user = result[0];
-
-      if (!user) {
-        return failureResponse(res, 404, "User not found");
-      }
-
-      const fullName = usersTable.name;
-
-      return successResponse(res, 200, "Token is valid", {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        token,
-        fullName: fullName,
-      });
-    } catch (error) {
-      console.error("❌ Error validating token:", error);
-      return failureResponse(res, 500, "Internal Server Error");
-    }
-  }
 }
 
 export default new AuthController();
