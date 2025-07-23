@@ -566,6 +566,46 @@ class AuthController {
       return failureResponse(res, 500, "Internal Server Error");
     }
   }
+  async validateToken(req: Request, res: Response): Promise<void> {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return failureResponse(res, 401, "Missing or invalid token");
+      }
+      console.log("Token validation initiated", authHeader);
+
+      const rawToken = req.headers.authorization?.split(" ")[1];
+      const token = rawToken?.replace(/[^\w-_.]+/g, ""); // Removes non-JWT-safe chars
+
+      console.log("Token for verification:", token);
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+
+      console.log("Token validation started for token:", token);
+      console.log("Decoded token:", decoded);
+      const [user] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, decoded.id))
+        .limit(1);
+
+      if (!user) {
+        return failureResponse(res, 404, "User not found");
+      }
+
+      return successResponse(res, 200, "Token is valid", {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        token,
+      });
+    } catch (error: any) {
+      console.error(`Token validation failed: ${error.message}`);
+      return failureResponse(res, 401, "Invalid or expired token");
+    }
+  }
 }
 
 export default new AuthController();
