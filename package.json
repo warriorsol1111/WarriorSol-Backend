@@ -23,8 +23,8 @@
     "build:watch": "tsc --watch",
     "start": "node dist/index.js",
     "dev": "tsx --watch   src/index.ts",
-    "migrate": "drizzle-kit generate:pg --config=drizzle.config.mjs",
-    "migrate:push": "tsx src/core/database/migratePush.ts"
+    "migrate": "DRIZZLE_CONFIG_PATH=drizzle.config.mjs drizzle-kit generate:pg",
+    "migrate:push": "tsx src/common/database/migratePush.ts"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "devDependencies": {
