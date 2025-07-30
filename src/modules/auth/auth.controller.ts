@@ -18,15 +18,25 @@ class AuthController {
     try {
       const { name, email, password } = req.body;
 
-      //check if nickname is already taken
-      const [existingUser] = await db
+
+      const [existingUserEmail] = await db
         .select()
         .from(usersTable)
         .where(eq(usersTable.email, email))
         .limit(1);
 
-      if (existingUser) {
-        return successResponse(res, 400, "Email already registered");
+      if (existingUserEmail) {
+        if (existingUserEmail.status === "active") {
+          // Already verified = fully registered
+          return successResponse(res, 400, "Email already registered");
+        } else {
+          // Exists but not verified
+          return successResponse(
+            res,
+            400,
+            "Email not verified"
+          );
+        }
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -118,13 +128,13 @@ class AuthController {
       const emailDetails =
         type === "email"
           ? {
-              subject: "Verify Your Email Address",
-              templatePath: "verify-email.ejs",
-            }
+            subject: "Verify Your Email Address",
+            templatePath: "verify-email.ejs",
+          }
           : {
-              subject: "Reset Your Password",
-              templatePath: "reset-password.ejs",
-            };
+            subject: "Reset Your Password",
+            templatePath: "reset-password.ejs",
+          };
 
       await publishToQueue({
         email,
@@ -139,8 +149,7 @@ class AuthController {
       return successResponse(
         res,
         200,
-        `New verification code sent to your email for ${
-          type === "email" ? "email verification" : "password reset"
+        `New verification code sent to your email for ${type === "email" ? "email verification" : "password reset"
         }`
       );
     } catch (error: any) {
