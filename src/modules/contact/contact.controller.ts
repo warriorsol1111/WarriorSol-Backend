@@ -51,6 +51,16 @@ class ContactController {
           )
         );
       }
+      await publishToQueue({
+  email,
+  subject: "We've received your message!",
+  templatePath: "contact-email-confirmation.ejs",
+  templateData: {
+    fullName,
+    email,
+    message,
+  },
+});
 
       return successResponse(res, 200, "Message sent successfully.");
     } catch (error: any) {
