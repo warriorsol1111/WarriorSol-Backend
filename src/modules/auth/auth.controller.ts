@@ -18,7 +18,6 @@ class AuthController {
     try {
       const { name, email, password } = req.body;
 
-
       const [existingUserEmail] = await db
         .select()
         .from(usersTable)
@@ -31,11 +30,7 @@ class AuthController {
           return successResponse(res, 400, "Email already registered");
         } else {
           // Exists but not verified
-          return successResponse(
-            res,
-            400,
-            "Email not verified"
-          );
+          return successResponse(res, 400, "Email not verified");
         }
       }
 
@@ -102,6 +97,13 @@ class AuthController {
           "No account found with this email address"
         );
       }
+      if (type === "email" && user.status === "active") {
+        return failureResponse(
+          res,
+          400,
+          "Email already verified"
+        );
+      }
 
       // Mark all existing verification codes of this type as used (invalidate them)
       await db
@@ -128,13 +130,13 @@ class AuthController {
       const emailDetails =
         type === "email"
           ? {
-            subject: "Verify Your Email Address",
-            templatePath: "verify-email.ejs",
-          }
+              subject: "Verify Your Email Address",
+              templatePath: "verify-email.ejs",
+            }
           : {
-            subject: "Reset Your Password",
-            templatePath: "reset-password.ejs",
-          };
+              subject: "Reset Your Password",
+              templatePath: "reset-password.ejs",
+            };
 
       await publishToQueue({
         email,
@@ -149,7 +151,8 @@ class AuthController {
       return successResponse(
         res,
         200,
-        `New verification code sent to your email for ${type === "email" ? "email verification" : "password reset"
+        `New verification code sent to your email for ${
+          type === "email" ? "email verification" : "password reset"
         }`
       );
     } catch (error: any) {
