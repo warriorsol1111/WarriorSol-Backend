@@ -26,15 +26,17 @@ export const scheduleNewsletterEmails = () => {
 
         console.log(`Sending newsletter to ${subscribers.length} subscribers`);
 
+        const now = new Date();
+        const monthName = now.toLocaleString("default", { month: "long" });
+
         for (const subscriber of subscribers) {
           await publishToQueue({
             email: subscriber.email,
-            subject: "🔥 July Newsletter – Warrior Sol Is Here!",
+            subject: `🔥 ${monthName} Newsletter – Warrior Sol Is Here!`,
             templatePath: "newsletter-mail.ejs",
             templateData: {
-              heading: "You've unlocked the July Transmission ",
-              intro:
-                "This month we drop heat, share behind-the-scenes moments, and celebrate YOU — the real warrior.",
+              heading: `You've unlocked the ${monthName} Transmission`,
+              intro: `This month we drop heat, share behind-the-scenes moments, and celebrate YOU — the real warrior.`,
               content:
                 "Introducing our latest drop: *Solar Surge*. Bold designs, ethically made, unapologetically strong. You’ll want to grab these before they vanish.",
               cta: {
