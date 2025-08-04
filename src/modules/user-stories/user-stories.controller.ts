@@ -49,8 +49,16 @@ class UserStoriesController {
     }
     try {
       const userStories = await db
-        .select()
+        .select({
+          story: userStoriesTable,
+          user: {
+            id: usersTable.id,
+            name: usersTable.name,
+            profilePhoto: usersTable.profilePhoto,
+          },
+        })
         .from(userStoriesTable)
+        .innerJoin(usersTable, eq(userStoriesTable.userId, usersTable.id))
         .where(eq(userStoriesTable.status, "approved"))
         .orderBy(desc(userStoriesTable.createdAt));
       return successResponse(
@@ -71,8 +79,16 @@ class UserStoriesController {
         return failureResponse(res, 401, "Unauthorized");
       }
       const userStory = await db
-        .select()
+        .select({
+          story: userStoriesTable,
+          user: {
+            id: usersTable.id,
+            name: usersTable.name,
+            profilePhoto: usersTable.profilePhoto,
+          },
+        })
         .from(userStoriesTable)
+        .innerJoin(usersTable, eq(userStoriesTable.userId, usersTable.id))
         .where(eq(userStoriesTable.id, id));
       return successResponse(
         res,

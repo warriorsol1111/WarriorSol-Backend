@@ -12,6 +12,7 @@ import bcrypt from "bcrypt";
 import { eq, and, desc, or } from "drizzle-orm";
 import { generateVerificationCode } from "../../common/utils/auth.util.ts";
 import { publishToQueue } from "../email/producers/email.producers.ts";
+import { uploadFile } from "../../common/utils/cloudinary.ts";
 
 class AuthController {
   async registerUser(req: Request, res: Response): Promise<void> {
@@ -98,11 +99,7 @@ class AuthController {
         );
       }
       if (type === "email" && user.status === "active") {
-        return failureResponse(
-          res,
-          400,
-          "Email already verified"
-        );
+        return failureResponse(res, 400, "Email already verified");
       }
 
       // Mark all existing verification codes of this type as used (invalidate them)
@@ -216,6 +213,7 @@ class AuthController {
         name: user.name,
         email: user.email,
         status: user.status,
+        profilePhoto: user.profilePhoto,
         role: user.role,
         token,
         loginMethod: "credentials",
@@ -401,6 +399,48 @@ class AuthController {
       return failureResponse(res, 500, "Internal Server Error");
     }
   }
+  async uploadProfilePhoto(req: Request, res: Response): Promise<void> {
+    try {
+      const file = req.file;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return failureResponse(res, 401, "Unauthorized");
+      }
+
+      if (!file) {
+        return failureResponse(res, 400, "No file uploaded");
+      }
+
+      let profilePhotoUrl: string;
+
+      try {
+        const uploadResult = await uploadFile(file, {
+          folder: "profile-photos",
+        });
+        profilePhotoUrl = uploadResult.secure_url;
+      } catch (err) {
+        console.error("Upload failed:", err);
+        return failureResponse(res, 500, "Failed to upload photo");
+      }
+
+      const [updatedUser] = await db
+        .update(usersTable)
+        .set({ profilePhoto: profilePhotoUrl, updatedAt: new Date() })
+        .where(eq(usersTable.id, userId))
+        .returning();
+
+      return successResponse(
+        res,
+        200,
+        "Profile photo updated",
+        updatedUser.profilePhoto
+      );
+    } catch (error) {
+      console.error("Error updating profile photo:", error);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
 
   async googleSyncUser(req: Request, res: Response): Promise<void> {
     try {
@@ -444,6 +484,7 @@ class AuthController {
             id: existingUser.id,
             email: existingUser.email,
             name: existingUser.name,
+            profilePhoto: existingUser.profilePhoto,
           },
           process.env.JWT_SECRET!,
           { expiresIn: "1d" }
@@ -454,6 +495,7 @@ class AuthController {
           email: existingUser.email,
           name: existingUser.name,
           token,
+          profilePhoto: existingUser.profilePhoto,
           role: existingUser.role || "user",
         });
       }
@@ -482,6 +524,7 @@ class AuthController {
         email: newUser.email,
         name: newUser.name,
         token,
+        profilePhoto: newUser.profilePhoto,
         role: newUser.role || "user",
       });
     } catch (err: any) {

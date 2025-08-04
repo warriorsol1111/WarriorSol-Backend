@@ -22,6 +22,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash"),
   name: varchar("name", { length: 255 }).notNull(),
   cartId: varchar("cart_id", { length: 255 }),
+  profilePhoto: varchar("profile_photo", { length: 1000 }),
   authProvider: varchar("auth_provider", {
     enum: ["credentials", "google"],
   })
@@ -154,7 +155,7 @@ export const supportApplicationsTable = pgTable("support_applications", {
   contactEmail: varchar("contact_email", { length: 256 }).notNull(),
   contactPhone: varchar("contact_phone", { length: 20 }),
   familySize: integer("family_size").notNull(),
-  supportType: text("support_type").notNull(), // donation | gift_card | scholarship
+  supportType: text("support_type").notNull(),
   requestedAmount: numeric("requested_amount", {
     precision: 10,
     scale: 2,
@@ -163,4 +164,26 @@ export const supportApplicationsTable = pgTable("support_applications", {
   status: text("status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const ordersTable = pgTable("orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  shopifyOrderId: varchar("shopify_order_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export const reviews = pgTable("reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => usersTable.id)
+    .notNull(),
+  productId: uuid("product_id").notNull(),
+  score: integer("score").notNull(),
+  review: text("review").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });

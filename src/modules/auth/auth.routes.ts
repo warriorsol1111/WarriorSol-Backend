@@ -1,9 +1,14 @@
 import { Router } from "express";
 import authController from "./auth.controller.ts";
 import authenticateJwt from "../../common/middlewares/auth.middleware.ts";
+import multer from "multer";
 
 const authRouter = Router();
-
+const userStoriesRouter = Router();
+const upload = multer({
+  limits: { fileSize: 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+});
 authRouter.post("/register", authController.registerUser);
 authRouter.post("/resend-otp", authController.resendOtp);
 authRouter.post("/login", authController.loginUser);
@@ -20,6 +25,12 @@ authRouter.post(
   "/change-password",
   authenticateJwt,
   authController.changePassword
+);
+authRouter.post(
+  "/upload-photo",
+  authenticateJwt,
+  upload.single("photo"),
+  authController.uploadProfilePhoto
 );
 
 export default authRouter;
