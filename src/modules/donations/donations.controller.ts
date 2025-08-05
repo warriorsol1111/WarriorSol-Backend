@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import db from "../../common/database";
-import { donationsTable } from "../../common/database/schema";
+import { donationsTable, usersTable } from "../../common/database/schema";
 import { eq } from "drizzle-orm";
 import { successResponse, failureResponse } from "../../common/utils/responses";
 import { desc } from "drizzle-orm";
@@ -133,8 +133,17 @@ class DonationController {
         return failureResponse(res, 401, "Unauthorized");
       }
       const donations = await db
-        .select()
+        .select(
+          {
+            id: donationsTable.id,
+            amount: donationsTable.amount,
+            name: donationsTable.name,
+            createdAt: donationsTable.createdAt,
+            userProfilePhoto: usersTable.profilePhoto,
+          }
+        )
         .from(donationsTable)
+        .leftJoin(usersTable, eq(donationsTable.userId, usersTable.id))
         .orderBy(desc(donationsTable.createdAt))
         .where(eq(donationsTable.status, "paid"))
         .limit(5);
@@ -153,8 +162,15 @@ class DonationController {
         return failureResponse(res, 401, "Unauthorized");
       }
       const donations = await db
-        .select()
+        .select({
+          id: donationsTable.id,
+          amount: donationsTable.amount,
+          name: donationsTable.name,
+          createdAt: donationsTable.createdAt,
+          userProfilePhoto: usersTable.profilePhoto,
+        })
         .from(donationsTable)
+        .leftJoin(usersTable, eq(donationsTable.userId, usersTable.id))
         .orderBy(desc(donationsTable.amount))
         .limit(5);
 
