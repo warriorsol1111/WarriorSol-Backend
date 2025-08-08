@@ -12,7 +12,7 @@ export const scheduleLaunchEmails = () => {
   cron.schedule(
     productionSchedule,
     async () => {
-      if (hasLaunched) return; // avoid re-sending in case of restarts
+      if (hasLaunched) return;
       if (new Date().getFullYear() !== 2025) {
         console.log("Not 2025 — skipping launch job");
         return;
