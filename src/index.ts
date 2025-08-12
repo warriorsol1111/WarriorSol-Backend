@@ -15,7 +15,9 @@ import { scheduleNewsletterEmails } from "./modules/newsletter-mails/newsletter-
 import contactRouter from "./modules/contact/contact.routes.js";
 import donationsRouter from "./modules/donations/donations.route.js";
 import applyForSupportRouter from "./modules/apply-for-support/apply-for-support.routes.js";
-
+import ordersRouter from "./modules/orders/orders.route.js";
+import shopifyWebhookRouter from "./modules/shopify/webhook/route.js";
+import reviewsRouter from "./modules/reviews/reviews.routes.js";
 async function main() {
   const app = express();
   const port = process.env.PORT || 8000;
@@ -37,10 +39,13 @@ async function main() {
   app.use("/api/v1/wishlist", wishlistRouter);
   app.use("/api/v1/contact", contactRouter);
   app.use("/api/v1/donations", donationsRouter);
+  app.use("/api/v1/orders", ordersRouter);
   app.use("/api/v1/apply-for-support", applyForSupportRouter);
+  app.use("/api/v1/shopify/webhook", shopifyWebhookRouter);
+  app.use("/api/v1/reviews", reviewsRouter);
   // Initialize the launch email cron job
   scheduleLaunchEmails();
-  // Initilaize the newsletter email cron job
+  // Initialize the newsletter email cron job
   scheduleNewsletterEmails();
 
   app.listen(port, () => {

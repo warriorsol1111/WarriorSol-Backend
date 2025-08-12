@@ -180,7 +180,7 @@ export const reviews = pgTable("reviews", {
   userId: uuid("user_id")
     .references(() => usersTable.id)
     .notNull(),
-  productId: uuid("product_id").notNull(),
+  productId: varchar("product_id", { length: 255 }).notNull(),
   score: integer("score").notNull(),
   review: text("review").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })

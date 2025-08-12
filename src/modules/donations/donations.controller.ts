@@ -67,7 +67,7 @@ class DonationController {
     }
   }
 
-  async updateRecieptUrl(req: Request, res: Response): Promise<void> {
+  async updateReceiptUrl(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { stripeReceiptUrl } = req.body;
@@ -95,7 +95,7 @@ class DonationController {
     }
   }
 
-  async updateRecieptBySubscriptionId(
+  async updateReceiptBySubscriptionId(
     req: Request,
     res: Response
   ): Promise<void> {
@@ -133,15 +133,13 @@ class DonationController {
         return failureResponse(res, 401, "Unauthorized");
       }
       const donations = await db
-        .select(
-          {
-            id: donationsTable.id,
-            amount: donationsTable.amount,
-            name: donationsTable.name,
-            createdAt: donationsTable.createdAt,
-            userProfilePhoto: usersTable.profilePhoto,
-          }
-        )
+        .select({
+          id: donationsTable.id,
+          amount: donationsTable.amount,
+          name: donationsTable.name,
+          createdAt: donationsTable.createdAt,
+          userProfilePhoto: usersTable.profilePhoto,
+        })
         .from(donationsTable)
         .leftJoin(usersTable, eq(donationsTable.userId, usersTable.id))
         .orderBy(desc(donationsTable.createdAt))

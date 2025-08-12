@@ -23,12 +23,12 @@ donationsRouter.get(
 
 donationsRouter.put(
   "/update-receipt-by-session/:id",
-  donationsController.updateRecieptUrl
+  donationsController.updateReceiptUrl
 );
 
 donationsRouter.put(
   "/update-receipt-by-subscription/:id",
-  donationsController.updateRecieptBySubscriptionId
+  donationsController.updateReceiptBySubscriptionId
 );
 
 export default donationsRouter;

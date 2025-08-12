@@ -16,7 +16,6 @@ class ReviewsController {
       }
 
       const { productId, rating, comment } = req.body;
-
       if (!productId || !rating) {
         return failureResponse(res, 400, "Product ID and rating are required");
       }
@@ -47,6 +46,43 @@ class ReviewsController {
     }
   }
 
+  async updateProductReview(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return failureResponse(res, 401, "Unauthorized");
+      }
+
+      const { productId, rating, comment } = req.body;
+      if (!productId || !rating) {
+        return failureResponse(res, 400, "Product ID and rating are required");
+      }
+
+      const updatedReviewData = {
+        userId,
+        productId,
+        score: rating,
+        review: comment,
+        updatedAt: new Date(),
+      };
+
+      const [updatedReview] = await db
+        .update(reviews)
+        .set(updatedReviewData)
+        .where(eq(reviews.userId, userId))
+        .returning();
+
+      return successResponse(
+        res,
+        200,
+        "Review updated successfully",
+        updatedReview
+      );
+    } catch (error) {
+      console.error("Error updating review:", error);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
   async getProductReviews(req: Request, res: Response) {
     try {
       const { productId } = req.params;
@@ -112,3 +148,5 @@ class ReviewsController {
     }
   }
 }
+
+export default new ReviewsController();
