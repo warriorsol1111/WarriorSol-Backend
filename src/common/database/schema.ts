@@ -187,3 +187,58 @@ export const reviews = pgTable("reviews", {
     .defaultNow()
     .notNull(),
 });
+
+export const tashaDonationsTable = pgTable("tasha_donations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  userId: uuid("user_id").references(() => usersTable.id, {
+    onDelete: "set null",
+  }),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
+  stripeReceiptUrl: varchar("stripe_receipt_url", { length: 1024 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+
+  amount: integer("amount").notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default("usd"),
+
+  donationType: varchar("donation_type", {
+    enum: ["one-time", "monthly"],
+  }).notNull(),
+
+  status: varchar("status", {
+    enum: ["succeeded", "pending", "failed", "paid"],
+  })
+    .notNull()
+    .default("succeeded"),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+});
+
+export const tashaSupportApplicationsTable = pgTable(
+  "tasha_support_applications",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    familyName: varchar("family_name", { length: 256 }).notNull(),
+    contactEmail: varchar("contact_email", { length: 256 }).notNull(),
+    contactPhone: varchar("contact_phone", { length: 20 }),
+    familySize: integer("family_size").notNull(),
+    supportType: text("support_type").notNull(),
+    requestedAmount: numeric("requested_amount", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    situation: text("situation").notNull(),
+    status: text("status").default("pending").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  }
+);

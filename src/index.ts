@@ -18,6 +18,8 @@ import applyForSupportRouter from "./modules/apply-for-support/apply-for-support
 import ordersRouter from "./modules/orders/orders.route.js";
 import shopifyWebhookRouter from "./modules/shopify/webhook/route.js";
 import reviewsRouter from "./modules/reviews/reviews.routes.js";
+import tashaDonationsRouter from "./modules/tasha-foundation/donations/donations.route.js";
+import tashaSupportApplicationsRouter from "./modules/tasha-foundation/apply-for-support/apply-for-support.routes.js";
 async function main() {
   const app = express();
   const port = process.env.PORT || 8000;
@@ -43,6 +45,11 @@ async function main() {
   app.use("/api/v1/apply-for-support", applyForSupportRouter);
   app.use("/api/v1/shopify/webhook", shopifyWebhookRouter);
   app.use("/api/v1/reviews", reviewsRouter);
+  app.use("/api/v1/tasha-foundation/donations", tashaDonationsRouter);
+  app.use(
+    "/api/v1/tasha-foundation/apply-for-support",
+    tashaSupportApplicationsRouter
+  );
   // Initialize the launch email cron job
   scheduleLaunchEmails();
   // Initialize the newsletter email cron job
