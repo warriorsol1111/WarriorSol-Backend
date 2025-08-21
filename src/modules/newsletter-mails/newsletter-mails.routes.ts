@@ -1,12 +1,12 @@
 import { Router } from "express";
 import {
-  addUserToLaunchMails,
-  getCountOfLaunchMails,
-} from "./newsletter-mails.controller.ts";
+  addUserToNewsletterMails,
+  getCountOfNewsletterMails,
+} from "./newsletter-mails.controller";
 
 const newsletterMailsRouter = Router();
 
-newsletterMailsRouter.post("/register", addUserToLaunchMails);
-newsletterMailsRouter.get("/count", getCountOfLaunchMails);
+newsletterMailsRouter.post("/register", addUserToNewsletterMails);
+newsletterMailsRouter.get("/count", getCountOfNewsletterMails);
 export default newsletterMailsRouter;
 ``;

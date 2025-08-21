@@ -1,6 +1,6 @@
 import { Router } from "express";
-import cartController from "./cart.controller.ts";
-import authenticateJwt from "../../common/middlewares/auth.middleware.ts";
+import cartController from "./cart.controller";
+import authenticateJwt from "../../common/middlewares/auth.middleware";
 
 const cartRouter = Router();
 cartRouter.get("/", authenticateJwt, cartController.getCartID);

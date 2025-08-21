@@ -1,6 +1,6 @@
 import { Router } from "express";
-import applyForSupportController from "./apply-for-support.controller.ts";
-import authenticateJwt from "../../common/middlewares/auth.middleware.ts";
+import applyForSupportController from "./apply-for-support.controller";
+import authenticateJwt from "../../common/middlewares/auth.middleware";
 
 const applyForSupportRouter = Router();
 

@@ -1,160 +1,178 @@
 // auth.controller.ts
 
 import { Request, Response } from "express";
-import {
-  successResponse,
-  failureResponse,
-} from "../../common/utils/responses.ts";
-import db from "../../common/database/index.ts";
+import { successResponse, failureResponse } from "../../common/utils/responses";
+import db from "../../common/database/index";
 import jwt from "jsonwebtoken";
-import { usersTable, verificationCodes } from "../../common/database/schema.ts";
+import { usersTable, verificationCodes } from "../../common/database/schema";
 import bcrypt from "bcrypt";
 import { eq, and, desc, or } from "drizzle-orm";
-import { generateVerificationCode } from "../../common/utils/auth.util.ts";
-import { publishToQueue } from "../email/producers/email.producers.ts";
-import { uploadFile } from "../../common/utils/cloudinary.ts";
+import { generateVerificationCode } from "../../common/utils/auth.util";
+import { publishToQueue } from "../email/producers/email.producers";
+import { uploadFile } from "../../common/utils/cloudinary";
 
 class AuthController {
   async registerUser(req: Request, res: Response): Promise<void> {
+    const { name, email, password } = req.body;
+
     try {
-      const { name, email, password } = req.body;
+      await db.transaction(async (tx) => {
+        // 1️⃣ Check if user exists
+        const [existingUserEmail] = await tx
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.email, email))
+          .limit(1);
 
-      const [existingUserEmail] = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, email))
-        .limit(1);
-
-      if (existingUserEmail) {
-        if (existingUserEmail.status === "active") {
-          // Already verified = fully registered
-          return successResponse(res, 400, "Email already registered");
-        } else {
-          // Exists but not verified
-          return successResponse(res, 400, "Email not verified");
+        if (existingUserEmail) {
+          if (existingUserEmail.status === "active") {
+            return successResponse(res, 400, "Email already registered");
+          } else {
+            return successResponse(res, 400, "Email not verified");
+          }
         }
-      }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const verificationCode = generateVerificationCode(6);
+        // 2️⃣ Create user
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const verificationCode = generateVerificationCode(6);
 
-      const [newUser] = await db
-        .insert(usersTable)
-        .values({
-          id: crypto.randomUUID(),
-          name,
-          email,
-          passwordHash: hashedPassword,
-        })
-        .returning({
-          id: usersTable.id,
-          name: usersTable.name,
-          email: usersTable.email,
+        const [newUser] = await tx
+          .insert(usersTable)
+          .values({
+            id: crypto.randomUUID(),
+            name,
+            email,
+            passwordHash: hashedPassword,
+          })
+          .returning({
+            id: usersTable.id,
+            name: usersTable.name,
+            email: usersTable.email,
+          });
+
+        // 3️⃣ Insert verification code
+        await tx.insert(verificationCodes).values({
+          userId: newUser.id,
+          code: verificationCode,
+          type: "email",
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         });
 
-      await db.insert(verificationCodes).values({
-        userId: newUser.id,
-        code: verificationCode,
-        type: "email",
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // expires in 5 minutes
-      });
+        // 4️⃣ Send email (throw if fails → rollback transaction)
+        try {
+          await publishToQueue({
+            email,
+            subject: "Verify Your Email Address",
+            templatePath: "verify-email.ejs",
+            templateData: { verificationCode, name },
+          });
+        } catch (err) {
+          throw new Error("Email sending failed: " + (err as Error).message);
+        }
 
-      await publishToQueue({
-        email,
-        subject: "Verify Your Email Address",
-        templatePath: "verify-email.ejs",
-        templateData: { verificationCode, name },
+        return successResponse(
+          res,
+          201,
+          "User registered successfully",
+          newUser
+        );
       });
-
-      return successResponse(res, 201, "User registered successfully", newUser);
     } catch (error: any) {
-      console.error(`Signup failed: ${error.message}`);
-
-      if (error.code === "23505" && error.constraint === "users_email_unique") {
-        return failureResponse(res, 409, "Email already registered");
-      }
-      return failureResponse(res, 500, "Internal Server Error");
+      console.error("Signup failed:", error);
+      return failureResponse(
+        res,
+        500,
+        error.message || "Internal Server Error"
+      );
     }
   }
 
   async resendOtp(req: Request, res: Response): Promise<void> {
+    const { email, type } = req.body;
+
+    if (!["email", "forget_password"].includes(type)) {
+      return failureResponse(res, 400, "Invalid verification type");
+    }
+
     try {
-      const { email, type } = req.body;
+      await db.transaction(async (tx) => {
+        const [user] = await tx
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.email, email))
+          .limit(1);
 
-      if (!["email", "forget_password"].includes(type)) {
-        return failureResponse(res, 400, "Invalid verification type");
-      }
+        if (!user) {
+          return failureResponse(
+            res,
+            404,
+            "No account found with this email address"
+          );
+        }
+        if (type === "email" && user.status === "active") {
+          return failureResponse(res, 400, "Email already verified");
+        }
 
-      const [user] = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, email))
-        .limit(1);
+        // invalidate previous codes
+        await tx
+          .update(verificationCodes)
+          .set({ isUsed: true })
+          .where(
+            and(
+              eq(verificationCodes.userId, user.id),
+              eq(verificationCodes.type, type),
+              eq(verificationCodes.isUsed, false)
+            )
+          );
 
-      if (!user) {
-        return failureResponse(
+        const verificationCode = generateVerificationCode(6);
+
+        await tx.insert(verificationCodes).values({
+          userId: user.id,
+          code: verificationCode,
+          type,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          isUsed: false,
+        });
+
+        const emailDetails =
+          type === "email"
+            ? {
+                subject: "Verify Your Email Address",
+                templatePath: "verify-email.ejs",
+              }
+            : {
+                subject: "Reset Your Password",
+                templatePath: "reset-password.ejs",
+              };
+
+        // send email
+        try {
+          await publishToQueue({
+            email,
+            subject: emailDetails.subject,
+            templatePath: emailDetails.templatePath,
+            templateData: { verificationCode, name: user.name },
+          });
+        } catch (err: any) {
+          throw new Error("Email sending failed: " + err.message);
+        }
+
+        return successResponse(
           res,
-          404,
-          "No account found with this email address"
+          200,
+          `New verification code sent to your email for ${
+            type === "email" ? "email verification" : "password reset"
+          }`
         );
-      }
-      if (type === "email" && user.status === "active") {
-        return failureResponse(res, 400, "Email already verified");
-      }
-
-      // Mark all existing verification codes of this type as used (invalidate them)
-      await db
-        .update(verificationCodes)
-        .set({ isUsed: true })
-        .where(
-          and(
-            eq(verificationCodes.userId, user.id),
-            eq(verificationCodes.type, type),
-            eq(verificationCodes.isUsed, false)
-          )
-        );
-
-      const verificationCode = generateVerificationCode(6);
-
-      await db.insert(verificationCodes).values({
-        userId: user.id,
-        code: verificationCode,
-        type: type,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-        isUsed: false,
       });
-
-      const emailDetails =
-        type === "email"
-          ? {
-              subject: "Verify Your Email Address",
-              templatePath: "verify-email.ejs",
-            }
-          : {
-              subject: "Reset Your Password",
-              templatePath: "reset-password.ejs",
-            };
-
-      await publishToQueue({
-        email,
-        subject: emailDetails.subject,
-        templatePath: emailDetails.templatePath,
-        templateData: {
-          verificationCode,
-          name: user.name,
-        },
-      });
-
-      return successResponse(
-        res,
-        200,
-        `New verification code sent to your email for ${
-          type === "email" ? "email verification" : "password reset"
-        }`
-      );
     } catch (error: any) {
-      console.error(`Resend OTP failed: ${error.message}`);
-      return failureResponse(res, 500, "Internal Server Error");
+      console.error("Resend OTP failed:", error);
+      return failureResponse(
+        res,
+        500,
+        error.message || "Internal Server Error"
+      );
     }
   }
 
@@ -229,58 +247,66 @@ class AuthController {
   }
 
   async forgotPassword(req: Request, res: Response): Promise<void> {
+    const { email } = req.body;
+
     try {
-      const { email } = req.body;
+      await db.transaction(async (tx) => {
+        const [user] = await tx
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.email, email))
+          .limit(1);
 
-      const [user] = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, email))
-        .limit(1);
+        if (!user) {
+          return successResponse(
+            res,
+            404,
+            "No account found with this email address"
+          );
+        }
 
-      if (!user) {
+        if (user.authProvider === "google") {
+          return failureResponse(
+            res,
+            403,
+            "This email is linked to a Google account. Please sign in with Google."
+          );
+        }
+
+        const verificationCode = generateVerificationCode(6);
+
+        await tx.insert(verificationCodes).values({
+          userId: user.id,
+          code: verificationCode,
+          type: "forget_password",
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          isUsed: false,
+        });
+
+        try {
+          await publishToQueue({
+            email,
+            subject: "Reset Your Password",
+            templatePath: "reset-password.ejs",
+            templateData: { verificationCode, name: user.name },
+          });
+        } catch (err: any) {
+          throw new Error("Email sending failed: " + err.message);
+        }
+
         return successResponse(
           res,
-          404,
-          "No account found with this email address"
+          200,
+          "Password reset code sent to your email"
         );
-      }
-
-      if (user.authProvider === "google") {
-        return failureResponse(
-          res,
-          403,
-          "This email is linked to a Google account. Please sign in with Google."
-        );
-      }
-      const verificationCode = generateVerificationCode(6);
-
-      await db.insert(verificationCodes).values({
-        userId: user.id,
-        code: verificationCode,
-        type: "forget_password",
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-        isUsed: false,
       });
-
-      await publishToQueue({
-        email,
-        subject: "Reset Your Password",
-        templatePath: "reset-password.ejs",
-        templateData: {
-          verificationCode,
-          name: user.name,
-        },
-      });
-
-      return successResponse(
-        res,
-        200,
-        "Password reset code sent to your email"
-      );
     } catch (error: any) {
-      console.error(`Forgot password failed: ${error.message}`);
-      return failureResponse(res, 500, "Internal Server Error");
+      console.error("Forgot password failed:", error);
+      return failureResponse(
+        res,
+        500,
+        error.message || "Internal Server Error"
+      );
     }
   }
 

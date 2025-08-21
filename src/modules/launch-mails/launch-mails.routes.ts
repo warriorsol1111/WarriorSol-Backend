@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   addUserToLaunchMails,
   getCountOfLaunchMails,
-} from "./launch-mails.controller.ts";
+} from "./launch-mails.controller";
 
 const launchMailsRouter = Router();
 

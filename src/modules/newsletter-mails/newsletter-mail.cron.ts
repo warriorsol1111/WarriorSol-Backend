@@ -1,7 +1,7 @@
 import cron from "node-cron";
-import db from "../../common/database/index.ts";
-import { launchMailsTable } from "../../common/database/schema.ts";
-import { publishToQueue } from "../email/producers/email.producers.ts";
+import db from "../../common/database/index";
+import { launchMailsTable } from "../../common/database/schema";
+import { publishToQueue } from "../email/producers/email.producers";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 

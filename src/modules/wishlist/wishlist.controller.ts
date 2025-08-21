@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
-import {
-  successResponse,
-  failureResponse,
-} from "../../common/utils/responses.ts";
-import db from "../../common/database/index.ts";
+import { successResponse, failureResponse } from "../../common/utils/responses";
+import db from "../../common/database/index";
 import { eq, and, sql } from "drizzle-orm";
-import { usersTable, wishlistTable } from "../../common/database/schema.ts";
+import { usersTable, wishlistTable } from "../../common/database/schema";
 
 class WishlistController {
   async getWishlistItems(req: Request, res: Response) {

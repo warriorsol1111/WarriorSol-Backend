@@ -1,6 +1,6 @@
 import { Router } from "express";
 import authenticateJwt from "../../common/middlewares/auth.middleware";
-import wishlistController from "./wishlist.controller.ts";
+import wishlistController from "./wishlist.controller";
 
 const wishlistRouter = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import authController from "./auth.controller.ts";
-import authenticateJwt from "../../common/middlewares/auth.middleware.ts";
+import authController from "./auth.controller";
+import authenticateJwt from "../../common/middlewares/auth.middleware";
 import multer from "multer";
 
 const authRouter = Router();

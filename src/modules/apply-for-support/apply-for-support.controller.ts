@@ -43,43 +43,54 @@ class SupportApplicationsController {
         return failureResponse(res, 400, "All required fields must be filled");
       }
 
-      const [application] = await db
-        .insert(supportApplicationsTable)
-        .values({
-          userId: userID,
-          familyName,
-          contactEmail,
-          contactPhone,
-          familySize,
-          supportType,
-          requestedAmount,
-          situation,
-        })
-        .returning();
-
-      // 🔔 Send "application received" confirmation email
-      if (contactEmail) {
-        await publishToQueue({
-          email: contactEmail,
-          subject: "We've Received Your Support Application",
-          templatePath: "application-submitted.ejs",
-          templateData: {
+      await db.transaction(async (tx) => {
+        const [application] = await tx
+          .insert(supportApplicationsTable)
+          .values({
+            userId: userID,
             familyName,
+            contactEmail,
+            contactPhone,
+            familySize,
             supportType,
-            frontendUrl: process.env.FRONTEND_URL || "https://warriorsol.org",
-          },
-        });
-      }
+            requestedAmount,
+            situation,
+          })
+          .returning();
 
-      return successResponse(
-        res,
-        201,
-        "Support application submitted successfully",
-        application
-      );
+        // Send confirmation email
+        try {
+          if (contactEmail) {
+            await publishToQueue({
+              email: contactEmail,
+              subject: "We've Received Your Support Application",
+              templatePath: "application-submitted.ejs",
+              templateData: {
+                familyName,
+                supportType,
+                frontendUrl:
+                  process.env.FRONTEND_URL || "https://warriorsol.org",
+              },
+            });
+          }
+        } catch (err) {
+          throw new Error("Email sending failed: " + (err as Error).message);
+        }
+
+        return successResponse(
+          res,
+          201,
+          "Support application submitted successfully",
+          application
+        );
+      });
     } catch (err) {
       console.error("Error creating support application:", err);
-      return failureResponse(res, 500, "Internal Server Error");
+      return failureResponse(
+        res,
+        500,
+        (err as Error).message || "Internal Server Error"
+      );
     }
   }
 
@@ -132,103 +143,122 @@ class SupportApplicationsController {
       const { id } = req.params;
       const userID = req.user?.id;
       if (!userID) return failureResponse(res, 401, "Unauthorized");
-      const [application] = await db
-        .select()
-        .from(supportApplicationsTable)
-        .where(eq(supportApplicationsTable.id, parseInt(id)))
-        .limit(1);
 
-      if (!application) {
-        return failureResponse(res, 404, "Support application not found");
-      }
+      await db.transaction(async (tx) => {
+        const [application] = await tx
+          .select()
+          .from(supportApplicationsTable)
+          .where(eq(supportApplicationsTable.id, parseInt(id)))
+          .limit(1);
 
-      if (application.status === "approved") {
-        return failureResponse(res, 400, "Application is already approved");
-      }
-      if (application.status === "rejected") {
-        return failureResponse(res, 400, "Application is already rejected");
-      }
-      const [updated] = await db
-        .update(supportApplicationsTable)
-        .set({ status: "approved" })
-        .where(eq(supportApplicationsTable.id, parseInt(id)))
-        .returning();
+        if (!application)
+          return failureResponse(res, 404, "Support application not found");
+        if (application.status === "approved")
+          return failureResponse(res, 400, "Application is already approved");
+        if (application.status === "rejected")
+          return failureResponse(res, 400, "Application is already rejected");
 
-      const [user] = await db
-        .select({ email: usersTable.email })
-        .from(usersTable)
-        .where(eq(usersTable.id, updated.userId));
+        const [updated] = await tx
+          .update(supportApplicationsTable)
+          .set({ status: "approved" })
+          .where(eq(supportApplicationsTable.id, parseInt(id)))
+          .returning();
 
-      if (user?.email) {
-        await publishToQueue({
-          email: user.email,
-          subject: "Your Support Application Was Approved",
-          templatePath: "application-approved.ejs",
-          templateData: {
-            familyName: updated.familyName,
-            supportType: updated.supportType,
-            frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
-          },
-        });
-      }
+        const [user] = await tx
+          .select({ email: usersTable.email })
+          .from(usersTable)
+          .where(eq(usersTable.id, updated.userId));
 
-      return successResponse(res, 200, "Application approved", updated);
+        // Send approval email
+        try {
+          if (user?.email) {
+            await publishToQueue({
+              email: user.email,
+              subject: "Your Support Application Was Approved",
+              templatePath: "application-approved.ejs",
+              templateData: {
+                familyName: updated.familyName,
+                supportType: updated.supportType,
+                frontendUrl:
+                  process.env.FRONTEND_URL || "http://localhost:3000",
+              },
+            });
+          }
+        } catch (err) {
+          throw new Error("Email sending failed: " + (err as Error).message);
+        }
+
+        return successResponse(res, 200, "Application approved", updated);
+      });
     } catch (err) {
       console.error("Error approving support application:", err);
-      return failureResponse(res, 500, "Internal Server Error");
+      return failureResponse(
+        res,
+        500,
+        (err as Error).message || "Internal Server Error"
+      );
     }
   }
+
   async rejectSupportApplication(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const userID = req.user?.id;
       if (!userID) return failureResponse(res, 401, "Unauthorized");
 
-      const [application] = await db
-        .select()
-        .from(supportApplicationsTable)
-        .where(eq(supportApplicationsTable.id, parseInt(id)))
-        .limit(1);
+      await db.transaction(async (tx) => {
+        const [application] = await tx
+          .select()
+          .from(supportApplicationsTable)
+          .where(eq(supportApplicationsTable.id, parseInt(id)))
+          .limit(1);
 
-      if (!application) {
-        return failureResponse(res, 404, "Support application not found");
-      }
+        if (!application)
+          return failureResponse(res, 404, "Support application not found");
+        if (application.status === "rejected")
+          return failureResponse(res, 400, "Application is already rejected");
+        if (application.status === "approved")
+          return failureResponse(res, 400, "Application is already approved");
 
-      if (application.status === "rejected") {
-        return failureResponse(res, 400, "Application is already rejected");
-      }
-      if (application.status === "approved") {
-        return failureResponse(res, 400, "Application is already approved");
-      }
+        const [updated] = await tx
+          .update(supportApplicationsTable)
+          .set({ status: "rejected" })
+          .where(eq(supportApplicationsTable.id, parseInt(id)))
+          .returning();
 
-      const [updated] = await db
-        .update(supportApplicationsTable)
-        .set({ status: "rejected" })
-        .where(eq(supportApplicationsTable.id, parseInt(id)))
-        .returning();
+        const [user] = await tx
+          .select({ email: usersTable.email })
+          .from(usersTable)
+          .where(eq(usersTable.id, updated.userId));
 
-      const [user] = await db
-        .select({ email: usersTable.email })
-        .from(usersTable)
-        .where(eq(usersTable.id, updated.userId));
+        // Send rejection email
+        try {
+          if (user?.email) {
+            await publishToQueue({
+              email: user.email,
+              subject: "Support Application Update",
+              templatePath: "application-rejected.ejs",
+              templateData: {
+                familyName: updated.familyName,
+                supportType: updated.supportType,
+                frontendUrl:
+                  process.env.FRONTEND_URL || "http://localhost:3000",
+              },
+            });
+          }
+        } catch (err) {
+          throw new Error("Email sending failed: " + (err as Error).message);
+        }
 
-      if (user?.email) {
-        await publishToQueue({
-          email: user.email,
-          subject: "Support Application Update",
-          templatePath: "application-rejected.ejs",
-          templateData: {
-            familyName: updated.familyName,
-            supportType: updated.supportType,
-            frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
-          },
-        });
-      }
-
-      return successResponse(res, 200, "Application rejected", updated);
+        return successResponse(res, 200, "Application rejected", updated);
+      });
     } catch (err) {
       console.error("Error rejecting support application:", err);
-      return failureResponse(res, 500, "Internal Server Error");
+      return failureResponse(
+        res,
+        500,
+        (err as Error).message || "Internal Server Error"
+      );
     }
   }
 }

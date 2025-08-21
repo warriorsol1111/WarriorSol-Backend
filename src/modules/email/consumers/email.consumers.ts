@@ -1,6 +1,6 @@
 import ejs from "ejs";
 import amqp from "amqplib";
-import { sendEmail } from "../../../providers/email.provider.ts";
+import { sendEmail } from "../../../providers/email.provider";
 import path from "path";
 
 const templates = path.join(__dirname, "../../../templates/");

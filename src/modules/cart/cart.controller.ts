@@ -1,15 +1,12 @@
 import { Request, Response } from "express";
-import {
-  successResponse,
-  failureResponse,
-} from "../../common/utils/responses.ts";
-import db from "../../common/database/index.ts";
+import { successResponse, failureResponse } from "../../common/utils/responses";
+import db from "../../common/database/index";
 import jwt from "jsonwebtoken";
-import { usersTable, verificationCodes } from "../../common/database/schema.ts";
+import { usersTable, verificationCodes } from "../../common/database/schema";
 import bcrypt from "bcrypt";
 import { eq, and, desc, or } from "drizzle-orm";
-import { generateVerificationCode } from "../../common/utils/auth.util.ts";
-import { publishToQueue } from "../email/producers/email.producers.ts";
+import { generateVerificationCode } from "../../common/utils/auth.util";
+import { publishToQueue } from "../email/producers/email.producers";
 
 class CartController {
   async getCartID(req: Request, res: Response) {

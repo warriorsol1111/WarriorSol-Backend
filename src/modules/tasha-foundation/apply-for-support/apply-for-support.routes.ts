@@ -1,7 +1,7 @@
 import { Router } from "express";
-import applyForSupportController from "./apply-for-support.controller.ts";
-import authenticateJwt from "../../../common/middlewares/auth.middleware.ts";
-import applyForSupportRouter from "../../apply-for-support/apply-for-support.routes.ts";
+import applyForSupportController from "./apply-for-support.controller";
+import authenticateJwt from "../../../common/middlewares/auth.middleware";
+import applyForSupportRouter from "../../apply-for-support/apply-for-support.routes";
 
 const tashaSupportApplicationsRouter = Router();
 

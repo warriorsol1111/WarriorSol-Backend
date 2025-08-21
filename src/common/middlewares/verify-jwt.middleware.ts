@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { failureResponse } from "../utils/responses.ts";
+import { failureResponse } from "../utils/responses";
 import { Request, Response } from "express";
 
 interface DecodedToken {
