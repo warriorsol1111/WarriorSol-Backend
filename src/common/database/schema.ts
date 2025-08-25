@@ -118,20 +118,20 @@ export const donationsTable = pgTable("donations", {
   userId: uuid("user_id").references(() => usersTable.id, {
     onDelete: "set null",
   }),
-  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
-  stripeReceiptUrl: varchar("stripe_receipt_url", { length: 1024 }),
-  stripeSubscriptionId: varchar("stripe_subscription_id", {
-    length: 255,
-  }),
 
-  name: varchar("name", { length: 255 }).notNull(),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }).unique(),
+  stripeReceiptUrl: varchar("stripe_receipt_url", { length: 1024 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+
+  name: varchar("name", { length: 255 }).notNull().default("Recurring Donor"),
   email: varchar("email", { length: 255 }).notNull(),
 
   amount: integer("amount").notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default("usd"),
 
   donationType: varchar("donation_type", {
-    enum: ["one-time", "monthly"],
+    enum: ["one-time", "monthly"], // use "monthly" instead of "recurring"
   }).notNull(),
 
   status: varchar("status", {
@@ -194,18 +194,20 @@ export const tashaDonationsTable = pgTable("tasha_donations", {
   userId: uuid("user_id").references(() => usersTable.id, {
     onDelete: "set null",
   }),
-  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull(),
+
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }).unique(),
   stripeReceiptUrl: varchar("stripe_receipt_url", { length: 1024 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
 
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull().default("Recurring Donor"),
   email: varchar("email", { length: 255 }).notNull(),
 
   amount: integer("amount").notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default("usd"),
 
   donationType: varchar("donation_type", {
-    enum: ["one-time", "monthly"],
+    enum: ["one-time", "monthly"], // use "monthly" instead of "recurring"
   }).notNull(),
 
   status: varchar("status", {

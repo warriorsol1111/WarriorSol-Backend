@@ -66,7 +66,8 @@ class SupportApplicationsController {
           templateData: {
             familyName,
             supportType,
-            frontendUrl: process.env.FRONTEND_URL || "https://warriorsol.org",
+            frontendUrl:
+              process.env.TASHA_FOUNDATION_URL || "https://warriorsol.org",
           },
         });
       }
@@ -167,7 +168,8 @@ class SupportApplicationsController {
           templateData: {
             familyName: updated.familyName,
             supportType: updated.supportType,
-            frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+            frontendUrl:
+              process.env.TASHA_FOUNDATION_URL || "http://localhost:3000",
           },
         });
       }
@@ -220,7 +222,8 @@ class SupportApplicationsController {
           templateData: {
             familyName: updated.familyName,
             supportType: updated.supportType,
-            frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+            frontendUrl:
+              process.env.TASHA_FOUNDATION_URL || "http://localhost:3000",
           },
         });
       }

@@ -16,6 +16,7 @@ class DonationController {
     try {
       const {
         stripeSessionId,
+        stripeInvoiceId,
         stripeReceiptUrl,
         stripeSubscriptionId,
         name,
@@ -27,7 +28,7 @@ class DonationController {
         userId = null,
       } = req.body;
 
-      if (!stripeSessionId || !name || !email || !amount) {
+      if ((!stripeSessionId && !stripeInvoiceId) || !email || !amount) {
         return failureResponse(res, 400, "Missing required fields");
       }
 
@@ -35,9 +36,10 @@ class DonationController {
 
       await db.insert(tashaDonationsTable).values({
         stripeSessionId,
+        stripeInvoiceId,
         stripeReceiptUrl,
         stripeSubscriptionId,
-        name,
+        name: name || "Recurring Donor",
         email,
         amount,
         currency,

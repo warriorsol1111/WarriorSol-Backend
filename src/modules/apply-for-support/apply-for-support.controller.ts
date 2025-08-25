@@ -69,7 +69,8 @@ class SupportApplicationsController {
                 familyName,
                 supportType,
                 frontendUrl:
-                  process.env.FRONTEND_URL || "https://warriorsol.org",
+                  process.env.WARRIOR_SOL_FOUNDATION_URL ||
+                  "https://warriorsol.org",
               },
             });
           }
@@ -180,7 +181,8 @@ class SupportApplicationsController {
                 familyName: updated.familyName,
                 supportType: updated.supportType,
                 frontendUrl:
-                  process.env.FRONTEND_URL || "http://localhost:3000",
+                  process.env.WARRIOR_SOL_FOUNDATION_URL ||
+                  "http://localhost:3000",
               },
             });
           }
@@ -242,7 +244,8 @@ class SupportApplicationsController {
                 familyName: updated.familyName,
                 supportType: updated.supportType,
                 frontendUrl:
-                  process.env.FRONTEND_URL || "http://localhost:3000",
+                  process.env.WARRIOR_SOL_FOUNDATION_URL ||
+                  "http://localhost:3000",
               },
             });
           }
