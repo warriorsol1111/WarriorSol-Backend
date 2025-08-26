@@ -25,7 +25,7 @@ tashaSupportApplicationsRouter.put(
   authenticateJwt,
   applyForSupportController.approveSupportApplication
 );
-applyForSupportRouter.put(
+tashaSupportApplicationsRouter.put(
   "/:id/reject",
   authenticateJwt,
   applyForSupportController.rejectSupportApplication
