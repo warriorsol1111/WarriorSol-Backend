@@ -10,7 +10,11 @@ import {
   failureResponse,
 } from "../../../common/utils/responses";
 import { desc } from "drizzle-orm";
-
+function nullIfEmpty(value?: string | null) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  return value;
+}
 class DonationController {
   async createDonation(req: Request, res: Response): Promise<void> {
     try {
@@ -35,22 +39,28 @@ class DonationController {
       const normalizedUserId = userId === "anonymous" ? null : userId;
 
       await db.insert(tashaDonationsTable).values({
-        stripeSessionId,
-        stripeInvoiceId,
-        stripeReceiptUrl,
-        stripeSubscriptionId,
+        stripeSessionId: nullIfEmpty(stripeSessionId),
+        stripeInvoiceId: nullIfEmpty(stripeInvoiceId),
+        stripeReceiptUrl: nullIfEmpty(stripeReceiptUrl),
+        stripeSubscriptionId: nullIfEmpty(stripeSubscriptionId),
         name: name || "Recurring Donor",
         email,
         amount,
         currency,
         donationType,
         status,
-        userId: normalizedUserId,
+        userId: normalizedUserId || null,
       });
 
       return successResponse(res, 201, "Donation recorded successfully");
     } catch (error: any) {
-      console.error("Failed to create donation:", error.message);
+      console.error("Failed to create donation:", {
+        message: error.message,
+        detail: error.detail,
+        code: error.code,
+        stack: error.stack,
+      });
+
       return failureResponse(res, 500, "Internal Server Error");
     }
   }

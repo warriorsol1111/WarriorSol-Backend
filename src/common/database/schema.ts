@@ -1,3 +1,4 @@
+import { unique } from "drizzle-orm/pg-core";
 import {
   integer,
   pgTable,
@@ -9,12 +10,21 @@ import {
   numeric,
 } from "drizzle-orm/pg-core";
 
-export const launchMailsTable = pgTable("launch_mails", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  email: varchar({ length: 255 }).notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const launchMailsTable = pgTable(
+  "launch_mails",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    email: varchar({ length: 255 }).notNull(),
+    site: varchar({ length: 100 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      emailPerSite: unique().on(table.email, table.site), // allows same email across sites, but unique within one
+    };
+  }
+);
 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
