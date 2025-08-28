@@ -468,6 +468,32 @@ class AuthController {
     }
   }
 
+  async deleteProfilePhoto(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return failureResponse(res, 401, "Unauthorized");
+      }
+
+      const [updatedUser] = await db
+        .update(usersTable)
+        .set({ profilePhoto: null, updatedAt: new Date() })
+        .where(eq(usersTable.id, userId))
+        .returning();
+
+      return successResponse(
+        res,
+        200,
+        "Profile photo deleted",
+        updatedUser.profilePhoto
+      );
+    } catch (error) {
+      console.error("Error deleting profile photo:", error);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
+
   async googleSyncUser(req: Request, res: Response): Promise<void> {
     try {
       const { email, name } = req.body;

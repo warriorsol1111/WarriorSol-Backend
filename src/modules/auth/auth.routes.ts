@@ -32,5 +32,10 @@ authRouter.post(
   upload.single("photo"),
   authController.uploadProfilePhoto
 );
+authRouter.delete(
+  "/delete-photo",
+  authenticateJwt,
+  authController.deleteProfilePhoto
+);
 
 export default authRouter;

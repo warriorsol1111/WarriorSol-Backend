@@ -8,50 +8,51 @@ cloudinary.config({
   api_secret: "TD6xU0uGkCahyu0Gv763GfEMdww",
 });
 
-interface UploadResponse {
-  secure_url: string;
-  public_id: string;
-  resource_type: string;
-  format: string;
-  duration?: number;
-}
-
 export async function uploadFile(
   file: Express.Multer.File,
   options: {
     folder?: string;
     transformation?: any[];
   } = {}
-): Promise<UploadResponse> {
-  try {
-    const b64 = Buffer.from(file.buffer).toString("base64");
-    const dataURI = `data:${file.mimetype};base64,${b64}`;
+): Promise<{ secure_url: string; public_id: string }> {
+  return new Promise((resolve, reject) => {
+    try {
+      const folderPath = options.folder ? `${options.folder}/` : "";
+      const uniqueFilename = `${Date.now()}___${file.originalname}`;
 
-    const uploadOptions: any = {
-      resource_type: "auto", // Let Cloudinary detect type
-      folder: options.folder || "uploads",
-    };
+      const uploadOptions: any = {
+        resource_type: "auto", // auto-detect (image, video, etc.)
+        folder: options.folder || "uploads",
+        public_id: `${folderPath}${uniqueFilename}`,
+      };
 
-    if (options.transformation) {
-      uploadOptions.transformation = options.transformation;
+      if (options.transformation) {
+        uploadOptions.transformation = options.transformation;
+      }
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary upload failed:", error);
+            return reject(error);
+          }
+
+          if (!result) {
+            return reject(new Error("Cloudinary returned no result"));
+          }
+
+          resolve({
+            secure_url: result.secure_url,
+            public_id: result.public_id,
+          });
+        }
+      );
+
+      uploadStream.end(file.buffer);
+    } catch (err) {
+      console.error("Upload error:", err);
+      reject(err);
     }
-
-    const folderPath = options.folder ? `${options.folder}/` : "";
-    const uniqueFilename = `${new Date().getTime()}___${file.originalname}`;
-
-    uploadOptions.public_id = `${folderPath}${uniqueFilename}`;
-
-    const result = await cloudinary.uploader.upload(dataURI, uploadOptions);
-
-    return {
-      secure_url: result.secure_url,
-      public_id: result.public_id,
-      resource_type: result.resource_type,
-      format: result.format,
-      duration: result.duration,
-    };
-  } catch (error) {
-    console.error("File upload failed:", error);
-    throw new Error(`File upload failed: ${error}`);
-  }
+  });
 }
