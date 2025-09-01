@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import db from "../../common/database/index.js";
 import { userStoriesTable, usersTable } from "../../common/database/schema.js";
 import {
@@ -24,7 +24,12 @@ class UserStoriesController {
       const userStories = await db
         .select()
         .from(userStoriesTable)
-        .where(eq(userStoriesTable.status, "pending"))
+        .where(
+          and(
+            eq(userStoriesTable.status, "pending"),
+            eq(userStoriesTable.isArchived, false)
+          )
+        )
         .orderBy(desc(userStoriesTable.createdAt));
 
       return successResponse(
@@ -55,7 +60,12 @@ class UserStoriesController {
         })
         .from(userStoriesTable)
         .innerJoin(usersTable, eq(userStoriesTable.userId, usersTable.id))
-        .where(eq(userStoriesTable.status, "approved"))
+        .where(
+          and(
+            eq(userStoriesTable.status, "approved"),
+            eq(userStoriesTable.isArchived, false)
+          )
+        )
         .orderBy(desc(userStoriesTable.createdAt));
 
       return successResponse(
@@ -87,7 +97,12 @@ class UserStoriesController {
         })
         .from(userStoriesTable)
         .innerJoin(usersTable, eq(userStoriesTable.userId, usersTable.id))
-        .where(eq(userStoriesTable.id, id));
+        .where(
+          and(
+            eq(userStoriesTable.id, id),
+            eq(userStoriesTable.isArchived, false)
+          )
+        );
 
       return successResponse(
         res,
@@ -133,6 +148,7 @@ class UserStoriesController {
           description,
           userType,
           isAnonymous,
+          isArchived: false,
           attachment: attachmentUrl,
         })
         .returning();
@@ -280,6 +296,76 @@ class UserStoriesController {
       );
     } catch (error) {
       console.error("Error deleting user story:", error);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
+  async archiveUserStory(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const [updatedStory] = await db
+        .update(userStoriesTable)
+        .set({ isArchived: true })
+        .where(eq(userStoriesTable.id, id))
+        .returning();
+
+      if (!updatedStory)
+        return failureResponse(res, 404, "User story not found");
+
+      return successResponse(
+        res,
+        200,
+        "User story archived successfully",
+        updatedStory
+      );
+    } catch (error) {
+      console.error("Error archiving user story:", error);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
+
+  async unarchiveUserStory(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const [updatedStory] = await db
+        .update(userStoriesTable)
+        .set({ isArchived: false })
+        .where(eq(userStoriesTable.id, id))
+        .returning();
+
+      if (!updatedStory)
+        return failureResponse(res, 404, "User story not found");
+
+      return successResponse(
+        res,
+        200,
+        "User story unarchived successfully",
+        updatedStory
+      );
+    } catch (error) {
+      console.error("Error unarchiving user story:", error);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
+
+  async fetchArchivedUserStories(req: Request, res: Response) {
+    try {
+      const userID = req.user?.id;
+      if (!userID) return failureResponse(res, 401, "Unauthorized");
+      console.log(userID);
+      const userStories = await db
+        .select()
+        .from(userStoriesTable)
+        .where(eq(userStoriesTable.isArchived, true))
+        .orderBy(desc(userStoriesTable.createdAt));
+      console.log(userStories);
+      return successResponse(
+        res,
+        200,
+        "Archived user stories fetched successfully",
+        userStories
+      );
+    } catch (error) {
+      console.error("Error fetching archived stories:", error);
       return failureResponse(res, 500, "Internal Server Error");
     }
   }

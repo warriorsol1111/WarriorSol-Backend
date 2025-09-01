@@ -9,6 +9,11 @@ const upload = multer({
   storage: multer.memoryStorage(),
 });
 userStoriesRouter.get(
+  "/archived",
+  authenticateJwt,
+  userStoriesController.fetchArchivedUserStories
+);
+userStoriesRouter.get(
   "/",
   authenticateJwt,
   userStoriesController.getAllUserStories
@@ -43,6 +48,16 @@ userStoriesRouter.delete(
   "/:id",
   authenticateJwt,
   userStoriesController.deleteUserStory
+);
+userStoriesRouter.put(
+  "/:id/archive",
+  authenticateJwt,
+  userStoriesController.archiveUserStory
+);
+userStoriesRouter.put(
+  "/:id/unarchive",
+  authenticateJwt,
+  userStoriesController.unarchiveUserStory
 );
 
 export default userStoriesRouter;

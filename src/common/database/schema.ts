@@ -97,6 +97,7 @@ export const userStoriesTable = pgTable("user_stories", {
     .notNull()
     .default("pending"),
   isAnonymous: boolean("is_anonymous").default(false).notNull(),
+  isArchived: boolean("is_archived").default(false).notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
