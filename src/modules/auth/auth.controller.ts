@@ -28,7 +28,31 @@ class AuthController {
           if (existingUserEmail.status === "active") {
             return successResponse(res, 400, "Email already registered");
           } else {
-            return successResponse(res, 400, "Email not verified");
+            //resend otp
+            const verificationCode = generateVerificationCode(6);
+            await tx.insert(verificationCodes).values({
+              userId: existingUserEmail.id,
+              code: verificationCode,
+              type: "email",
+              expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+            });
+            try {
+              await publishToQueue({
+                email,
+                subject: "Verify Your Email Address",
+                templatePath: "verify-email.ejs",
+                templateData: { verificationCode, name },
+              });
+            } catch (err) {
+              throw new Error(
+                "Email sending failed: " + (err as Error).message
+              );
+            }
+            return successResponse(
+              res,
+              400,
+              "Email not verified | OTP has been sent again"
+            );
           }
         }
 
@@ -208,6 +232,24 @@ class AuthController {
       }
 
       if (user.status !== "active") {
+        // resend otp
+        const verificationCode = generateVerificationCode(6);
+        await db.insert(verificationCodes).values({
+          userId: user.id,
+          code: verificationCode,
+          type: "email",
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        });
+        try {
+          await publishToQueue({
+            email,
+            subject: "Verify Your Email Address",
+            templatePath: "verify-email.ejs",
+            templateData: { verificationCode, name: user.name },
+          });
+        } catch (err: any) {
+          throw new Error("Email sending failed: " + err.message);
+        }
         return successResponse(
           res,
           403,

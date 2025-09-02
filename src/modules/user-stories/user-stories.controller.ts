@@ -96,7 +96,7 @@ class UserStoriesController {
           },
         })
         .from(userStoriesTable)
-        .innerJoin(usersTable, eq(userStoriesTable.userId, usersTable.id))
+        .leftJoin(usersTable, eq(userStoriesTable.userId, usersTable.id))
         .where(
           and(
             eq(userStoriesTable.id, id),
@@ -351,13 +351,11 @@ class UserStoriesController {
     try {
       const userID = req.user?.id;
       if (!userID) return failureResponse(res, 401, "Unauthorized");
-      console.log(userID);
       const userStories = await db
         .select()
         .from(userStoriesTable)
         .where(eq(userStoriesTable.isArchived, true))
         .orderBy(desc(userStoriesTable.createdAt));
-      console.log(userStories);
       return successResponse(
         res,
         200,
