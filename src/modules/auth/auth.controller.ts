@@ -28,6 +28,17 @@ class AuthController {
           if (existingUserEmail.status === "active") {
             return successResponse(res, 400, "Email already registered");
           } else {
+            await tx
+              .update(verificationCodes)
+              .set({ isUsed: true })
+              .where(
+                and(
+                  eq(verificationCodes.userId, existingUserEmail.id),
+                  eq(verificationCodes.type, "email"),
+                  eq(verificationCodes.isUsed, false)
+                )
+              );
+
             //resend otp
             const verificationCode = generateVerificationCode(6);
             await tx.insert(verificationCodes).values({
@@ -232,6 +243,17 @@ class AuthController {
       }
 
       if (user.status !== "active") {
+        await db
+          .update(verificationCodes)
+          .set({ isUsed: true })
+          .where(
+            and(
+              eq(verificationCodes.userId, user.id),
+              eq(verificationCodes.type, "email"),
+              eq(verificationCodes.isUsed, false)
+            )
+          );
+
         // resend otp
         const verificationCode = generateVerificationCode(6);
         await db.insert(verificationCodes).values({
@@ -314,6 +336,16 @@ class AuthController {
             "This email is linked to a Google account. Please sign in with Google."
           );
         }
+        await tx
+          .update(verificationCodes)
+          .set({ isUsed: true })
+          .where(
+            and(
+              eq(verificationCodes.userId, user.id),
+              eq(verificationCodes.type, "forget_password"),
+              eq(verificationCodes.isUsed, false)
+            )
+          );
 
         const verificationCode = generateVerificationCode(6);
 
