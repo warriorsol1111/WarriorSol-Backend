@@ -570,9 +570,12 @@ class AuthController {
 
   async googleSyncUser(req: Request, res: Response): Promise<void> {
     try {
+      console.log("📥 Incoming Google sync request:", req.body);
+
       const { email, name } = req.body;
 
       if (!email || !name) {
+        console.warn("⚠️ Missing email or name in Google sync request");
         return failureResponse(res, 400, "Email and name are required.");
       }
 
@@ -582,14 +585,21 @@ class AuthController {
         .where(eq(usersTable.email, email))
         .limit(1);
 
+      console.log("👤 Existing user lookup result:", existingUser);
+
       const [firstName, ...rest] = name.trim().split(" ");
       const finalName = `${firstName} ${rest.join(" ")}`.trim();
+      console.log("📝 Parsed finalName:", finalName);
 
       // ❌ If user exists & has password, block Google login
       if (existingUser) {
         const hasPassword = !!existingUser.passwordHash;
+        console.log("🔑 Existing user hasPassword:", hasPassword);
 
         if (hasPassword) {
+          console.warn(
+            "🚫 Blocking Google login: account already has password"
+          );
           return failureResponse(
             res,
             403,
@@ -597,8 +607,10 @@ class AuthController {
           );
         }
 
-        // ✅ Optionally update name if it changed
         if (existingUser.name !== finalName) {
+          console.log(
+            `🔄 Updating user name from "${existingUser.name}" → "${finalName}"`
+          );
           await db
             .update(usersTable)
             .set({ name: finalName })
@@ -616,6 +628,11 @@ class AuthController {
           { expiresIn: "1d" }
         );
 
+        console.log(
+          "✅ Google login allowed for existing user:",
+          existingUser.id
+        );
+
         return successResponse(res, 200, "Google login allowed", {
           id: existingUser.id,
           email: existingUser.email,
@@ -627,10 +644,13 @@ class AuthController {
       }
 
       // 👶 Create new Google-based user
+      const newId = crypto.randomUUID();
+      console.log("🆕 Creating new Google user with ID:", newId);
+
       const [newUser] = await db
         .insert(usersTable)
         .values({
-          id: crypto.randomUUID(),
+          id: newId,
           email,
           name: finalName,
           passwordHash: null,
@@ -645,6 +665,8 @@ class AuthController {
         { expiresIn: "1d" }
       );
 
+      console.log("✅ New Google user created:", newUser.id);
+
       return successResponse(res, 200, "Google user created", {
         id: newUser.id,
         email: newUser.email,
@@ -654,7 +676,7 @@ class AuthController {
         role: newUser.role || "user",
       });
     } catch (err: any) {
-      console.error("Google sync error:", err.message);
+      console.error("❌ Google sync error:", err.message, err.stack);
       return failureResponse(res, 500, "Internal server error.");
     }
   }
