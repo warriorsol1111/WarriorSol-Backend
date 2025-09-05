@@ -186,18 +186,27 @@ export const ordersTable = pgTable("orders", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-export const reviews = pgTable("reviews", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
-    .references(() => usersTable.id)
-    .notNull(),
-  productId: varchar("product_id", { length: 255 }).notNull(),
-  score: integer("score").notNull(),
-  review: text("review").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => usersTable.id)
+      .notNull(),
+    productId: varchar("product_id", { length: 255 }).notNull(),
+    score: integer("score").notNull(),
+    review: text("review").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    uniqueReviewPerProduct: unique().on(table.userId, table.productId),
+  })
+);
 
 export const tashaDonationsTable = pgTable("tasha_donations", {
   id: uuid("id").primaryKey().defaultRandom(),

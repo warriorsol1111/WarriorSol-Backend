@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { eq, desc, count, avg } from "drizzle-orm";
+import { eq, desc, count, avg, and } from "drizzle-orm";
 import db from "../../common/database/index.js";
 import { reviews, usersTable } from "../../common/database/schema.js";
 import {
@@ -66,17 +66,24 @@ class ReviewsController {
         updatedAt: new Date(),
       };
 
-      const [updatedReview] = await db
-        .update(reviews)
-        .set(updatedReviewData)
-        .where(eq(reviews.userId, userId))
+      await db
+        .insert(reviews)
+        .values(updatedReviewData)
+        .onConflictDoUpdate({
+          target: [reviews.userId, reviews.productId],
+          set: {
+            score: rating,
+            review: comment,
+            updatedAt: new Date(),
+          },
+        })
         .returning();
 
       return successResponse(
         res,
         200,
         "Review updated successfully",
-        updatedReview
+        updatedReviewData
       );
     } catch (error) {
       console.error("Error updating review:", error);
