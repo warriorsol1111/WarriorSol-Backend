@@ -32,9 +32,7 @@ async function main() {
   app.use(passport.initialize());
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ limit: "15mb", extended: true }));
-  console.log(process.env.FRONTEND_URL);
-  console.log(process.env.WARRIOR_SOL_FOUNDATION_URL);
-  console.log(process.env.TASHA_FOUNDATION_URL);
+
   app.use("/api/v1/launch-mails/", launchMailsRouter);
   app.use("/api/v1/newsletter-mails/", newsletterMailsRouter);
   app.use("/api/v1/auth/", authRouter);
