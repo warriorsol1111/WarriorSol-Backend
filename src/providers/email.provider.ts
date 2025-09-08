@@ -8,7 +8,7 @@ export async function sendEmail(
   try {
     // Define the email options
     const mailOptions = {
-      from: `"WarriorSol " <ops@warriorsol.com>`,
+      from: `"WarriorSol " <hello@warriorsol.com>`,
       to: email,
       subject: subject,
       html: template,
