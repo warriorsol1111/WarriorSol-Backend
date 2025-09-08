@@ -4,6 +4,7 @@ import db from "../../common/database/index";
 import { launchMailsTable } from "../../common/database/schema";
 import { publishToQueue } from "../email/producers/email.producers";
 import { count, eq, and } from "drizzle-orm";
+import { addContactToHubSpot } from "../../utils/hubspot";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
@@ -29,6 +30,8 @@ export const addUserToLaunchMails = async (req: Request, res: Response) => {
     await db.transaction(async (tx) => {
       // Insert email
       await tx.insert(launchMailsTable).values({ email, site });
+
+      await addContactToHubSpot(email, site);
 
       try {
         // Pick template depending on site
