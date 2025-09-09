@@ -183,6 +183,7 @@ export const ordersTable = pgTable("orders", {
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
   shopifyOrderId: varchar("shopify_order_id", { length: 255 }),
+  shopifyOrderName: varchar("shopify_order_name", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

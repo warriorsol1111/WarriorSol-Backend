@@ -57,6 +57,7 @@ router.post("/orders/create", async (req: Request, res: Response) => {
     const newOrder = {
       userId,
       shopifyOrderId: orderData.id.toString(),
+      shopifyOrderName: orderData.name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
