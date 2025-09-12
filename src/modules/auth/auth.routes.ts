@@ -6,7 +6,7 @@ import multer from "multer";
 const authRouter = Router();
 const userStoriesRouter = Router();
 const upload = multer({
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   storage: multer.memoryStorage(),
 });
 authRouter.post("/register", authController.registerUser);
@@ -36,11 +36,6 @@ authRouter.delete(
   "/delete-photo",
   authenticateJwt,
   authController.deleteProfilePhoto
-);
-authRouter.post(
-  "/upload-file",
-  upload.single("file"),
-  authController.uploadFileToCloudinary
 );
 
 export default authRouter;
