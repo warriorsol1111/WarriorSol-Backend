@@ -747,6 +747,27 @@ class AuthController {
       return failureResponse(res, 500, "Internal Server Error");
     }
   }
+
+  async uploadFileToCloudinary(req: Request, res: Response): Promise<void> {
+    try {
+      const file = req.file;
+      if (!file) {
+        return failureResponse(res, 400, "No file uploaded");
+      }
+
+      const uploadResult = await uploadFile(file, {
+        folder: "photos",
+      });
+
+      return successResponse(res, 200, "File uploaded successfully", {
+        secure_url: uploadResult.secure_url,
+        public_id: uploadResult.public_id,
+      });
+    } catch (error: any) {
+      console.error(`File upload failed: ${error.message}`);
+      return failureResponse(res, 500, "Internal Server Error");
+    }
+  }
 }
 
 export default new AuthController();
