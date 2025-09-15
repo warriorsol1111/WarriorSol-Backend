@@ -18,7 +18,7 @@ export async function consumeEmails() {
       const channel = await connection.createChannel();
       await channel.assertQueue(QUEUE_NAME, { durable: true });
 
-      console.log("Waiting for messages in", QUEUE_NAME);
+      console.log("Waiting for messages to be sent in", QUEUE_NAME);
 
       channel.consume(
         QUEUE_NAME,
