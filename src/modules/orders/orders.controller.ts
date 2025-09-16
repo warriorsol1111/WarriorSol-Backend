@@ -60,15 +60,22 @@ query getOrder($id: ID!) {
     id
     name
     createdAt
-    displayFinancialStatus
-    displayFulfillmentStatus
-    cancelledAt
     totalPriceSet {
       shopMoney {
         amount
         currencyCode
       }
     }
+    displayFinancialStatus
+    displayFulfillmentStatus
+    cancelledAt
+    
+    # Order-level custom attributes
+    customAttributes {
+      key
+      value
+    }
+    
     lineItems(first: 50) {
       edges {
         node {
@@ -81,6 +88,13 @@ query getOrder($id: ID!) {
               currencyCode
             }
           }
+          
+          # Line item custom attributes
+          customAttributes {
+            key
+            value
+          }
+
           variant {
             id
             title
@@ -88,33 +102,48 @@ query getOrder($id: ID!) {
             image {
               url
             }
+
+            # Variant metafields - using individual metafield queries
+            isPreorder: metafield(namespace: "custom", key: "is_preorder") {
+              value
+            }
+            preorderShipDate: metafield(namespace: "custom", key: "preorder_ship_date") {
+              value
+            }
+
             product {
               id
               title
+
+              # Product metafields - using individual metafield queries
+              isPreorder: metafield(namespace: "custom", key: "is_preorder") {
+                value
+              }
+              preorderShipDate: metafield(namespace: "custom", key: "preorder_ship_date") {
+                value
+              }
             }
           }
         }
       }
     }
   }
-}
-`;
+}`;
 
-    // Step 2: GraphQL to fetch product details
     const PRODUCT_DETAILS_QUERY = `
-query getProducts($ids: [ID!]!) {
-  nodes(ids: $ids) {
-    ... on Product {
-      id
-      title
-      description
-      handle
-      tags
-      featuredImage { url }
-    }
-  }
-}
-`;
+    query getProducts($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Product {
+          id
+          title
+          description
+          handle
+          tags
+          featuredImage { url }
+        }
+      }
+    }`;
+
     try {
       const userID = req.user?.id;
       if (!userID) {
@@ -139,7 +168,7 @@ query getProducts($ids: [ID!]!) {
         })
       );
 
-      // Step 2: Collect all unique product IDs
+      // Step 2: Collect unique product IDs
       const allProductIds = Array.from(
         new Set(
           ordersWithShopifyData.flatMap(({ shopifyOrder }) =>
@@ -185,39 +214,82 @@ query getProducts($ids: [ID!]!) {
           )
         );
 
-      // Step 5: Merge everything together
+      // Step 5: Merge everything
       const ordersWithDetails = ordersWithShopifyData.map(
-        ({ shopifyOrder, ...order }) => ({
-          ...order,
-          date: shopifyOrder.createdAt,
-          total: parseFloat(shopifyOrder.totalPriceSet.shopMoney.amount),
-          financialStatus: shopifyOrder.displayFinancialStatus,
-          fulfillmentStatus: shopifyOrder.displayFulfillmentStatus,
-          cancelledAt: shopifyOrder.cancelledAt,
-          lineItems: shopifyOrder.lineItems.edges.map(({ node }: any) => {
-            const shortProductId = node.variant?.product?.id?.split("/").pop();
-            const product = shortProductId
-              ? productDetailsMap[shortProductId]
-              : null;
-            const review = shortProductId
-              ? userReviews.find((r) => r.productId === shortProductId)
-              : null;
+        ({ shopifyOrder, ...order }) => {
+          // Process order-level custom attributes
+          const orderCustomAttributes =
+            shopifyOrder.customAttributes?.reduce((acc: any, attr: any) => {
+              acc[attr.key] = attr.value;
+              return acc;
+            }, {}) || {};
 
-            return {
-              id: node.id,
-              title: node.title,
-              quantity: node.quantity,
-              price: parseFloat(node.originalTotalSet.shopMoney.amount),
-              variantId: node.variant?.id,
-              sku: node.variant?.sku,
-              image: node.variant?.image?.url,
-              product: product || null,
-              review: review
-                ? { id: review.id, score: review.score, text: review.review }
-                : null,
-            };
-          }),
-        })
+          return {
+            ...order,
+            date: shopifyOrder.createdAt,
+            total: parseFloat(shopifyOrder.totalPriceSet.shopMoney.amount),
+            financialStatus: shopifyOrder.displayFinancialStatus,
+            fulfillmentStatus: shopifyOrder.displayFulfillmentStatus,
+            cancelledAt: shopifyOrder.cancelledAt,
+
+            // Add order-level custom attributes
+            customAttributes: orderCustomAttributes,
+
+            lineItems: shopifyOrder.lineItems.edges.map(({ node }: any) => {
+              const shortProductId = node.variant?.product?.id
+                ?.split("/")
+                .pop();
+              const product = shortProductId
+                ? productDetailsMap[shortProductId]
+                : null;
+              const review = shortProductId
+                ? userReviews.find((r) => r.productId === shortProductId)
+                : null;
+
+              // Extract variant metafields (now they're direct fields)
+              const variantIsPreorder = node.variant?.isPreorder?.value;
+              const variantPreorderShipDate =
+                node.variant?.preorderShipDate?.value;
+
+              // Extract product metafields (now they're direct fields)
+              const productIsPreorder =
+                node.variant?.product?.isPreorder?.value;
+              const productPreorderShipDate =
+                node.variant?.product?.preorderShipDate?.value;
+
+              // Process line item custom attributes
+              const lineItemCustomAttributes =
+                node.customAttributes?.reduce((acc: any, attr: any) => {
+                  acc[attr.key] = attr.value;
+                  return acc;
+                }, {}) || {};
+
+              return {
+                id: node.id,
+                title: node.title,
+                quantity: node.quantity,
+                price: parseFloat(node.originalTotalSet.shopMoney.amount),
+                variantId: node.variant?.id,
+                sku: node.variant?.sku,
+                image: node.variant?.image?.url,
+                product: product || null,
+                review: review
+                  ? { id: review.id, score: review.score, text: review.review }
+                  : null,
+
+                // Add line item custom attributes
+                customAttributes: lineItemCustomAttributes,
+
+                isPreOrder:
+                  variantIsPreorder === "true" ||
+                  productIsPreorder === "true" ||
+                  false,
+                preorderShipDate:
+                  variantPreorderShipDate || productPreorderShipDate || null,
+              };
+            }),
+          };
+        }
       );
 
       return successResponse(
