@@ -30,8 +30,20 @@ export const addUserToLaunchMails = async (req: Request, res: Response) => {
     await db.transaction(async (tx) => {
       // Insert email
       await tx.insert(launchMailsTable).values({ email, site });
+      // Map site to signupSource with proper type safety
+      let signupSource: "warriorsol" | "foundation" | "tasha";
+      if (site === "warrior_sol") {
+        signupSource = "warriorsol";
+      } else if (site === "foundation") {
+        signupSource = "foundation";
+      } else if (site === "tasha_mellett") {
+        signupSource = "tasha";
+      } else {
+        // If site doesn't match any expected values, return an error
+        throw new Error("Invalid site");
+      }
 
-      await addContactToHubSpot(email, site);
+      await addContactToHubSpot(email, site, signupSource);
 
       // try {
       //   // Pick template depending on site

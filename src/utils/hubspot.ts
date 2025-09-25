@@ -11,6 +11,13 @@ interface HubSpotContact {
   };
 }
 
+interface HubSpotErrorResponse {
+  status: string;
+  message: string;
+  correlationId: string;
+  category: string;
+}
+
 interface HubSpotMarketingResponse {
   updated: string[];
   skipped: string[];
@@ -20,9 +27,13 @@ interface HubSpotMarketingResponse {
 /**
  * Create a contact in HubSpot and mark it as a marketing contact
  */
-export async function addContactToHubSpot(email: string, site: string) {
+export async function addContactToHubSpot(
+  email: string,
+  site: string,
+  signupSource: "warriorsol" | "foundation" | "tasha"
+) {
   try {
-    // 1. Create the contact
+    // 1. Create the contact with signupSource
     const createResponse = await fetch(
       "https://api.hubapi.com/crm/v3/objects/contacts",
       {
@@ -35,54 +46,42 @@ export async function addContactToHubSpot(email: string, site: string) {
           properties: {
             email,
             website: site,
+            signup_source: signupSource,
           },
         }),
       }
     );
 
-    if (!createResponse.ok) {
-      const errText = await createResponse.text();
-      throw new Error(
-        `❌ HubSpot create contact error: ${createResponse.status} - ${errText}`
+    if (createResponse.status === 409) {
+      // Contact already exists
+      const errData = (await createResponse.json()) as HubSpotErrorResponse;
+      console.warn("⚠️ HubSpot contact already exists:", errData);
+
+      return {
+        success: false,
+        message: "Email already exists in waitlist",
+        existingId: errData.message?.match(/ID: (\d+)/)?.[1] || null,
+      };
+    }
+
+    const responseData = await createResponse.json();
+
+    // Type guard to validate the response matches HubSpotContact
+    function isHubSpotContact(data: any): data is HubSpotContact {
+      return (
+        typeof data === "object" &&
+        data !== null &&
+        "id" in data &&
+        "properties" in data &&
+        "email" in data.properties
       );
     }
 
-    const contact: HubSpotContact =
-      (await createResponse.json()) as HubSpotContact;
-
-    // 2. Upgrade to marketing contact
-    const setMarketingResponse = await fetch(
-      "https://api.hubapi.com/marketing/v3/marketing-contacts/set-as-marketing-contact",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HUBSPOT_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: [
-            {
-              id: contact.id,
-            },
-          ],
-        }),
-      }
-    );
-
-    if (!setMarketingResponse.ok) {
-      const errText = await setMarketingResponse.text();
-      throw new Error(
-        `⚠️ HubSpot marketing upgrade error: ${setMarketingResponse.status} - ${errText}`
-      );
+    if (!isHubSpotContact(responseData)) {
+      throw new Error("Invalid response format from HubSpot API");
     }
 
-    const marketingData: HubSpotMarketingResponse =
-      (await setMarketingResponse.json()) as HubSpotMarketingResponse;
-
-    return {
-      contact,
-      marketingData,
-    };
+    const contact = responseData;
   } catch (error: any) {
     console.error("❌ Failed to add HubSpot contact:", error.message);
     throw error;
