@@ -43,39 +43,39 @@ export const addUserToLaunchMails = async (req: Request, res: Response) => {
         throw new Error("Invalid site");
       }
 
-      await addContactToHubSpot(email, site, signupSource);
+      // await addContactToHubSpot(email, site, signupSource);
 
-      // try {
-      //   // Pick template depending on site
-      //   let subject, templatePath;
+      try {
+        // Pick template depending on site
+        let subject, templatePath;
 
-      //   if (site === "warrior_sol") {
-      //     subject = "Welcome to the Warrior Sol Waitlist!";
-      //     templatePath = "warrior-waitlist-confirmation.ejs";
-      //   } else if (site === "foundation") {
-      //     subject = "Welcome to the Warrior Sol Foundation Waitlist!";
-      //     templatePath = "foundation-waitlist-confirmation.ejs";
-      //   } else if (site === "tasha_mellett") {
-      //     subject = "Welcome to the Tasha Mellett Foundation Waitlist!";
-      //     templatePath = "tasha-waitlist-confirmation.ejs";
-      //   } else {
-      //     return failureResponse(res, 400, "Invalid site");
-      //   }
+        if (site === "warrior_sol") {
+          subject = "Welcome to the Warrior Sol Waitlist!";
+          templatePath = "warrior-waitlist-confirmation.ejs";
+        } else if (site === "foundation") {
+          subject = "Welcome to the Warrior Sol Foundation Waitlist!";
+          templatePath = "foundation-waitlist-confirmation.ejs";
+        } else if (site === "tasha_mellett") {
+          subject = "Welcome to the Tasha Mellett Foundation Waitlist!";
+          templatePath = "tasha-waitlist-confirmation.ejs";
+        } else {
+          return failureResponse(res, 400, "Invalid site");
+        }
 
-      //   await publishToQueue({
-      //     email,
-      //     subject,
-      //     templatePath,
-      //     templateData: { frontendUrl: FRONTEND_URL },
-      //   });
-      // } catch (err) {
-      //   console.error(
-      //     "Failed to send waitlist confirmation email:",
-      //     (err as Error).message
-      //   );
+        await publishToQueue({
+          email,
+          subject,
+          templatePath,
+          templateData: { frontendUrl: FRONTEND_URL },
+        });
+      } catch (err) {
+        console.error(
+          "Failed to send waitlist confirmation email:",
+          (err as Error).message
+        );
 
-      //   return failureResponse(res, 500, "Failed to send confirmation email");
-      // }
+        return failureResponse(res, 500, "Failed to send confirmation email");
+      }
     });
     return successResponse(res, 200, "Email added successfully");
   } catch (error: any) {
