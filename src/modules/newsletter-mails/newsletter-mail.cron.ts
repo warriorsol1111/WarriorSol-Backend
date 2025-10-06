@@ -17,6 +17,14 @@ export const scheduleNewsletterEmails = () => {
     monthlySchedule,
     async () => {
       try {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const november11 = new Date(`${currentYear}-11-11T00:00:00Z`);
+        //dont send before 11 nov 2025
+        if (now < november11) {
+          console.log("Not time to send newsletter yet");
+          return;
+        }
         const subscribers = await db.select().from(launchMailsTable);
 
         if (subscribers.length === 0) {
@@ -26,7 +34,6 @@ export const scheduleNewsletterEmails = () => {
 
         console.log(`Sending newsletter to ${subscribers.length} subscribers`);
 
-        const now = new Date();
         const monthName = now.toLocaleString("default", { month: "long" });
 
         for (const subscriber of subscribers) {

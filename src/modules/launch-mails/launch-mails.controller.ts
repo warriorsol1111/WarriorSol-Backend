@@ -66,7 +66,7 @@ export const addUserToLaunchMails = async (req: Request, res: Response) => {
           email,
           subject,
           templatePath,
-          templateData: { frontendUrl: FRONTEND_URL },
+          templateData: { frontendUrl: FRONTEND_URL, logoUrl: "" },
         });
       } catch (err) {
         console.error(
